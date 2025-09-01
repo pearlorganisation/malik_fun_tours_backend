@@ -12,6 +12,7 @@ import {
   connectToMongoDB
 } from './src/configs/db.js'
 import packageRouter from "./src/routes/package.routes.js"
+import router from './src/routes/user.js'
 configDotenv()
 
 const app = express()
@@ -54,6 +55,7 @@ app.use(`/health`, async (req, res) => {
 
 
 app.use(`/api/v1/package`, packageRouter)
+app.use(`/api`, router);
 
 
 

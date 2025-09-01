@@ -6,4 +6,9 @@ export const COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === "production",
 };
 
+
+export const USER_ROLES_ENUM = {
+  USER: "USER",
+  ADMIN: "ADMIN",
+};
  
