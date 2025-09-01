@@ -57,5 +57,27 @@ export const create_package = asyncHandler(async (req, res, next) => {
 });
 
 export const get_all_packages = asyncHandler(async(req, res, next)=>{
-    
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 4;
+
+  const skip = (page - 1) * limit;
+
+  const packages = await Package.find().skip(skip).limit(limit);
+
+  const total = await Package.countDocuments();
+
+  return res.status(200).json({
+    success: true,
+    message: "Packages fetched successfully",
+    data: packages,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+
+
 })
