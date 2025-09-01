@@ -39,7 +39,7 @@ export const uploadMultipleImageBuffersToCloudinary = async (files, folderName =
     const uploads = files.map((file) => {
         return new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream({
-                    folder: `page_pop/${folderName}`,
+                    folder: `funtours/${folderName}`,
                     public_id: file.originalname.split(".")[0],
                     resource_type: "image",
                 },
