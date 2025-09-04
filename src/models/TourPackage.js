@@ -56,7 +56,7 @@ const tour_schema = new mongoose.Schema({
 tour_schema.index({ "itinerary.location": "2dsphere" });
 
 /** pre save hook for saving the indexed search name */
-//test commit
+//test
 
 tour_schema.pre("save",function(next){
       if(this.isModified("package_name")||this.isNew){
