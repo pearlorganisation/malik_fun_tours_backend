@@ -26,10 +26,12 @@ app.use(cors({
     "http://localhost:3001",
     "http://localhost:3002",
     "https://page-pop-frontend.vercel.app",
+    "https://malik-tours-frontend-qjnh.vercel.app"
   ] : [
     "http://localhost:3000",
     "http://localhost:3001",
     "https://page-pop-frontend.vercel.app",
+    "https://malik-tours-frontend-qjnh.vercel.app"
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Specify allowed HTTP methods
   allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
