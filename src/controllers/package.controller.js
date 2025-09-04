@@ -6,10 +6,14 @@ export const create_package = asyncHandler(async (req, res, next) => {
     const {
         package_options,
         itinerary,
-        package_meta_details
+        package_meta_details,
+        inclusions,
+        exclusions
     } = req.body;
     const payload = {};
-    console.log("req.body", req.body);
+    //console.log("req.body", req.body);
+    console.log("inclusion", inclusions);
+    console.log("explusion", exclusions);
 
     let uploadResults = await uploadMultipleImageBuffersToCloudinary(
         req.files.package_images,
@@ -39,10 +43,18 @@ export const create_package = asyncHandler(async (req, res, next) => {
             JSON.parse(package_meta_details) :
             package_meta_details;
     }
+  if (inclusions) {
+    payload.inclusions =
+      typeof inclusions === "string" ? JSON.parse(inclusions) : inclusions;
+  }
 
+  if (exclusions) {
+    payload.exclusions =
+      typeof exclusions === "string" ? JSON.parse(exclusions) : exclusions;
+  }
     const data = await Package.create({
         ...req.body,
-        ...payload, 
+        ...payload
     });
 
     console.log("the package is created", data);
