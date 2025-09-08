@@ -6,10 +6,14 @@ export const create_package = asyncHandler(async (req, res, next) => {
     const {
         package_options,
         itinerary,
-        package_meta_details
+        package_meta_details,
+        inclusions,
+        exclusions
     } = req.body;
     const payload = {};
-    console.log("req.body", req.body);
+    //console.log("req.body", req.body);
+    console.log("inclusion", inclusions);
+    console.log("explusion", exclusions);
 
     let uploadResults = await uploadMultipleImageBuffersToCloudinary(
         req.files.package_images,
@@ -39,10 +43,18 @@ export const create_package = asyncHandler(async (req, res, next) => {
             JSON.parse(package_meta_details) :
             package_meta_details;
     }
+  if (inclusions) {
+    payload.inclusions =
+      typeof inclusions === "string" ? JSON.parse(inclusions) : inclusions;
+  }
 
+  if (exclusions) {
+    payload.exclusions =
+      typeof exclusions === "string" ? JSON.parse(exclusions) : exclusions;
+  }
     const data = await Package.create({
         ...req.body,
-        ...payload, 
+        ...payload
     });
 
     console.log("the package is created", data);
@@ -56,6 +68,8 @@ export const create_package = asyncHandler(async (req, res, next) => {
         });
 });
 
+
+//get all packages with pagination
 export const get_all_packages = asyncHandler(async(req, res, next)=>{
 
   const page = parseInt(req.query.page) || 1;
@@ -79,5 +93,104 @@ export const get_all_packages = asyncHandler(async(req, res, next)=>{
     },
   });
 
-
 })
+
+  //delete package by id
+  export const delete_package = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const pkg = await Package.findById(id);
+
+  if (!pkg) {
+    return res.status(404).json({
+      success: false,
+      message: "Package not found",
+    });
+  }
+
+  await Package.findByIdAndDelete(id);
+
+  return res.status(200).json({
+    success: true,
+    message: "Package deleted successfully",
+  });
+});
+
+
+//update package by id
+export const update_package = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  let pkg = await Package.findById(id);
+  if (!pkg) {
+    return res.status(404).json({
+      success: false,
+      message: "Package not found",
+    });
+  }
+
+  const {
+    package_options,
+    itinerary,
+    package_meta_details,
+    inclusions,
+    exclusions,
+  } = req.body;
+
+  const payload = {};
+
+  if (req.files && req.files.package_images) {
+    let uploadResults = await uploadMultipleImageBuffersToCloudinary(
+      req.files.package_images,
+      "package_images"
+    );
+    if (uploadResults != null) {
+      payload.package_images = uploadResults;
+    }
+  }
+
+  if (package_options) {
+    payload.package_options =
+      typeof package_options === "string"
+        ? JSON.parse(package_options)
+        : package_options;
+  }
+
+  if (itinerary) {
+    payload.itinerary =
+      typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary;
+  }
+
+  if (package_meta_details) {
+    payload.package_meta_details =
+      typeof package_meta_details === "string"
+        ? JSON.parse(package_meta_details)
+        : package_meta_details;
+  }
+
+  if (inclusions) {
+    payload.inclusions =
+      typeof inclusions === "string" ? JSON.parse(inclusions) : inclusions;
+  }
+
+  if (exclusions) {
+    payload.exclusions =
+      typeof exclusions === "string" ? JSON.parse(exclusions) : exclusions;
+  }
+
+  pkg = await Package.findByIdAndUpdate(
+    id,
+    {
+      ...req.body,
+      ...payload,
+    },
+    { new: true, runValidators: true }
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: "Package updated successfully",
+    data: pkg,
+  });
+});
+
