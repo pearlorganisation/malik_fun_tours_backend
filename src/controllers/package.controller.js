@@ -11,9 +11,6 @@ export const create_package = asyncHandler(async (req, res, next) => {
         exclusions
     } = req.body;
     const payload = {};
-    //console.log("req.body", req.body);
-    console.log("inclusion", inclusions);
-    console.log("explusion", exclusions);
 
     let uploadResults = await uploadMultipleImageBuffersToCloudinary(
         req.files.package_images,

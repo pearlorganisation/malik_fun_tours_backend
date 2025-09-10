@@ -40,7 +40,11 @@ const tour_schema = new mongoose.Schema({
                         type: [Number],
                         required: true
                     }
-            }
+            },
+            activities:[{
+                type:mongoose.Schema.Types.ObjectId,
+                ref:"Activity"
+            }]
         }
      ],
      package_highlights:{type:String},
