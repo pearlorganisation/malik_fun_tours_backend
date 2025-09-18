@@ -203,3 +203,25 @@ export const update_activity = asyncHandler(async (req, res, next) => {
     data: activity,
   });
 });
+
+
+//get activity by id
+// GET ACTIVITY BY ID
+export const get_activity_by_id = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const activity = await Activity.findById(id);
+
+  if (!activity) {
+    return res.status(404).json({
+      success: false,
+      message: "Activity not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Activity fetched successfully",
+    data: activity,
+  });
+});
