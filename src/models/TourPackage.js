@@ -14,7 +14,7 @@ const tour_schema = new mongoose.Schema({
     package_category:{type:String},
     indexed_splitted_package_name:[{type:String, index:true}],
     package_options:[{
-        title:{type:String},
+        title:{type:String},  //category (private)
         description:{type:String},
         duration:{type:String},
         guide:{type:String },

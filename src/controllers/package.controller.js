@@ -3,43 +3,44 @@ import { Package } from "../models/TourPackage.js";
 import { asyncHandler } from "../utils/error/asyncHandler.js";
 
 export const create_package = asyncHandler(async (req, res, next) => {
-    const {
-        package_options,
-        itinerary,
-        package_meta_details,
-        inclusions,
-        exclusions
-    } = req.body;
-    const payload = {};
+  const {
+    package_options,
+    itinerary,
+    package_meta_details,
+    important_information,
+    inclusions,
+    exclusions,
+  } = req.body;
+  const payload = {};
 
-    let uploadResults = await uploadMultipleImageBuffersToCloudinary(
-        req.files.package_images,
-        "package_images"
-    );
-    console.log("uploadresults", uploadResults);
+  let uploadResults = await uploadMultipleImageBuffersToCloudinary(
+    req.files.package_images,
+    "package_images"
+  );
+  console.log("uploadresults", uploadResults);
 
-    if (uploadResults != null) {
-        payload.package_images = uploadResults;
-    }
+  if (uploadResults != null) {
+    payload.package_images = uploadResults;
+  }
 
-     if (package_options && package_options.length > 0) {
-        payload.package_options =
-            typeof package_options === "string" ?
-            JSON.parse(package_options) :
-            package_options;
-    }
+  if (package_options && package_options.length > 0) {
+    payload.package_options =
+      typeof package_options === "string"
+        ? JSON.parse(package_options)
+        : package_options;
+  }
 
-     if (itinerary && itinerary.length > 0) {
-        payload.itinerary =
-            typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary;
-    }
+  if (itinerary && itinerary.length > 0) {
+    payload.itinerary =
+      typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary;
+  }
 
-     if (package_meta_details && package_meta_details.length > 0) {
-        payload.package_meta_details =
-            typeof package_meta_details === "string" ?
-            JSON.parse(package_meta_details) :
-            package_meta_details;
-    }
+  if (package_meta_details && package_meta_details.length > 0) {
+    payload.package_meta_details =
+      typeof package_meta_details === "string"
+        ? JSON.parse(package_meta_details)
+        : package_meta_details;
+  }
   if (inclusions) {
     payload.inclusions =
       typeof inclusions === "string" ? JSON.parse(inclusions) : inclusions;
@@ -49,26 +50,29 @@ export const create_package = asyncHandler(async (req, res, next) => {
     payload.exclusions =
       typeof exclusions === "string" ? JSON.parse(exclusions) : exclusions;
   }
-    const data = await Package.create({
-        ...req.body,
-        ...payload
-    });
 
-    console.log("the package is created", data);
+ if (important_information) {
+    payload.important_information =
+        typeof important_information === "string"
+            ? JSON.parse(important_information)
+            : important_information;
+}
+  const data = await Package.create({
+    ...req.body,
+    ...payload,
+  });
 
-    return res
-        .status(201)
-        .json({
-            message: "the package received is",
-            data:data,
-            success: true
-        });
+  console.log("the package is created", data);
+
+  return res.status(201).json({
+    message: "the package received is",
+    data: data,
+    success: true,
+  });
 });
 
-
 //get all packages with pagination
-export const get_all_packages = asyncHandler(async(req, res, next)=>{
-
+export const get_all_packages = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 4;
 
@@ -89,11 +93,10 @@ export const get_all_packages = asyncHandler(async(req, res, next)=>{
       totalPages: Math.ceil(total / limit),
     },
   });
+});
 
-})
-
-  //delete package by id
-  export const delete_package = asyncHandler(async (req, res, next) => {
+//delete package by id
+export const delete_package = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
   const pkg = await Package.findById(id);
@@ -113,7 +116,6 @@ export const get_all_packages = asyncHandler(async(req, res, next)=>{
   });
 });
 
-
 //update package by id
 export const update_package = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
@@ -130,6 +132,7 @@ export const update_package = asyncHandler(async (req, res, next) => {
     package_options,
     itinerary,
     package_meta_details,
+    important_information,
     inclusions,
     exclusions,
   } = req.body;
@@ -175,6 +178,13 @@ export const update_package = asyncHandler(async (req, res, next) => {
       typeof exclusions === "string" ? JSON.parse(exclusions) : exclusions;
   }
 
+ if (important_information) {
+    payload.important_information =
+        typeof important_information === "string"
+            ? JSON.parse(important_information)
+            : important_information;
+}
+
   pkg = await Package.findByIdAndUpdate(
     id,
     {
@@ -191,3 +201,22 @@ export const update_package = asyncHandler(async (req, res, next) => {
   });
 });
 
+// get package by id
+export const get_package_by_id = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const pkg = await Package.findById(id);
+
+  if (!pkg) {
+    return res.status(404).json({
+      success: false,
+      message: "Package not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Package fetched successfully",
+    data: pkg,
+  });
+});
