@@ -135,6 +135,7 @@ export const update_package = asyncHandler(async (req, res, next) => {
     important_information,
     inclusions,
     exclusions,
+    package_available_dates
   } = req.body;
 
   const payload = {};

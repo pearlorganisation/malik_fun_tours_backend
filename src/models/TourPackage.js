@@ -6,6 +6,7 @@ const tour_schema = new mongoose.Schema({
         secure_url:{type:String},
         public_id:{type:String}
     }],
+    package_available_dates:[{type:Date}],
     package_description:{type:String,required:true},
     package_meta_details:[{
         title:{type:String},
