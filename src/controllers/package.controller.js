@@ -10,6 +10,9 @@ export const create_package = asyncHandler(async (req, res, next) => {
     important_information,
     inclusions,
     exclusions,
+        package_available_dates,
+        not_suitable_for
+
   } = req.body;
   const payload = {};
 
@@ -30,6 +33,12 @@ export const create_package = asyncHandler(async (req, res, next) => {
         : package_options;
   }
 
+  if (package_available_dates && package_available_dates.length >0){
+    payload.package_available_dates = typeof package_available_dates === "string" ? JSON.parse(package_available_dates) : package_available_dates
+  }
+   if (not_suitable_for && not_suitable_for.length >0){
+    payload.not_suitable_for = typeof not_suitable_for === "string" ? JSON.parse(not_suitable_for) : not_suitable_for
+   }
   if (itinerary && itinerary.length > 0) {
     payload.itinerary =
       typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary;
@@ -206,7 +215,12 @@ export const update_package = asyncHandler(async (req, res, next) => {
 export const get_package_by_id = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const pkg = await Package.findById(id);
+const pkg = await Package.findById(id)
+  // .populate({
+  //   path: "itinerary.activities", // path to populate
+  //   model: "Activity" // the model to use
+  // })
+  // .exec();
 
   if (!pkg) {
     return res.status(404).json({
