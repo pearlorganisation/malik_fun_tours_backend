@@ -7,6 +7,11 @@ import {
 } from '../controllers/package.controller.js'
 const router = express.Router()
 
+router.patch(
+  `/update/:id`,
+  upload.fields([{ name: "package_images", maxCount: 10 }]),
+  update_package
+);
 //create and get all packages
 router.route(`/`).post(upload.fields([{
     name: "package_images",
@@ -18,11 +23,7 @@ router.route(`/`).post(upload.fields([{
 router.route(`/:id`).delete(delete_package)
 
 //edit a package 
-router.patch(
-  `/update/:id`,
-  upload.fields([{ name: "package_images", maxCount: 10 }]),
-  update_package
-);
+ 
 
 //GET PACKAGE BY ID
 router.get(

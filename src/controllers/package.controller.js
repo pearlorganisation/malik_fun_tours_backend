@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { uploadMultipleImageBuffersToCloudinary } from "../configs/streamupload.js";
 import { Package } from "../models/TourPackage.js";
 import { asyncHandler } from "../utils/error/asyncHandler.js";
@@ -10,9 +11,8 @@ export const create_package = asyncHandler(async (req, res, next) => {
     important_information,
     inclusions,
     exclusions,
-        package_available_dates,
-        not_suitable_for
-
+    package_available_dates,
+    not_suitable_for,
   } = req.body;
   const payload = {};
 
@@ -33,12 +33,18 @@ export const create_package = asyncHandler(async (req, res, next) => {
         : package_options;
   }
 
-  if (package_available_dates && package_available_dates.length >0){
-    payload.package_available_dates = typeof package_available_dates === "string" ? JSON.parse(package_available_dates) : package_available_dates
+  if (package_available_dates && package_available_dates.length > 0) {
+    payload.package_available_dates =
+      typeof package_available_dates === "string"
+        ? JSON.parse(package_available_dates)
+        : package_available_dates;
   }
-   if (not_suitable_for && not_suitable_for.length >0){
-    payload.not_suitable_for = typeof not_suitable_for === "string" ? JSON.parse(not_suitable_for) : not_suitable_for
-   }
+  if (not_suitable_for && not_suitable_for.length > 0) {
+    payload.not_suitable_for =
+      typeof not_suitable_for === "string"
+        ? JSON.parse(not_suitable_for)
+        : not_suitable_for;
+  }
   if (itinerary && itinerary.length > 0) {
     payload.itinerary =
       typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary;
@@ -60,12 +66,12 @@ export const create_package = asyncHandler(async (req, res, next) => {
       typeof exclusions === "string" ? JSON.parse(exclusions) : exclusions;
   }
 
- if (important_information) {
+  if (important_information) {
     payload.important_information =
-        typeof important_information === "string"
-            ? JSON.parse(important_information)
-            : important_information;
-}
+      typeof important_information === "string"
+        ? JSON.parse(important_information)
+        : important_information;
+  }
   const data = await Package.create({
     ...req.body,
     ...payload,
@@ -128,7 +134,7 @@ export const delete_package = asyncHandler(async (req, res, next) => {
 //update package by id
 export const update_package = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-
+console.log("1st")
   let pkg = await Package.findById(id);
   if (!pkg) {
     return res.status(404).json({
@@ -144,7 +150,7 @@ export const update_package = asyncHandler(async (req, res, next) => {
     important_information,
     inclusions,
     exclusions,
-    package_available_dates
+    package_available_dates,
   } = req.body;
 
   const payload = {};
@@ -157,6 +163,7 @@ export const update_package = asyncHandler(async (req, res, next) => {
     if (uploadResults != null) {
       payload.package_images = uploadResults;
     }
+    console.log("this is running");
   }
 
   if (package_options) {
@@ -188,14 +195,13 @@ export const update_package = asyncHandler(async (req, res, next) => {
       typeof exclusions === "string" ? JSON.parse(exclusions) : exclusions;
   }
 
- if (important_information) {
+  if (important_information) {
     payload.important_information =
-        typeof important_information === "string"
-            ? JSON.parse(important_information)
-            : important_information;
-}
-
-  pkg = await Package.findByIdAndUpdate(
+      typeof important_information === "string"
+        ? JSON.parse(important_information)
+        : important_information;
+  }
+    pkg = await Package.findByIdAndUpdate(
     id,
     {
       ...req.body,
@@ -215,7 +221,7 @@ export const update_package = asyncHandler(async (req, res, next) => {
 export const get_package_by_id = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-const pkg = await Package.findById(id)
+  const pkg = await Package.findById({_id:id});
   // .populate({
   //   path: "itinerary.activities", // path to populate
   //   model: "Activity" // the model to use
