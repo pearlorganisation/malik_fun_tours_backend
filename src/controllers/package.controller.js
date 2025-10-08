@@ -221,11 +221,11 @@ console.log("1st")
 export const get_package_by_id = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const pkg = await Package.findById({_id:id});
-  // .populate({
-  //   path: "itinerary.activities", // path to populate
-  //   model: "Activity" // the model to use
-  // })
+  const pkg = await Package.findById({_id:id})
+  .populate({
+    path: "itinerary.activities", // path to populate
+    model: "Activity" // the model to use
+  })
   // .exec();
 
   if (!pkg) {

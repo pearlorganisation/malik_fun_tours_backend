@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Schema } from 'mongoose'
 
 const tour_schema = new mongoose.Schema({
     package_name:{type:String, required:true, index:true},
@@ -19,7 +19,7 @@ const tour_schema = new mongoose.Schema({
         description:{type:String},
         duration:{type:String},
         guide:{type:String },
-        tour_type:{type:String},
+        tour_type:[{type:String}],
         tour_timings:[{ type:String }],
         prices:{
             adult:{type:Number},
@@ -43,8 +43,8 @@ const tour_schema = new mongoose.Schema({
                     }
             },
             activities:[{
-                type:mongoose.Schema.Types.ObjectId,
-                ref:"Activity"
+                type:Schema.Types.ObjectId,
+                ref: "Activity"
             }]
         }
      ],
@@ -52,7 +52,15 @@ const tour_schema = new mongoose.Schema({
      inclusions:[String],
      exclusions:[String],
      important_information:[String],
-     not_suitable_for:[String]
+     not_suitable_for:[String],
+     category:{
+        type:Schema.Types.ObjectId,
+        ref:"Category"
+     },
+     destination:{
+        type:Schema.Types.ObjectId,
+        ref:"Destination"
+     }
 
 },{
     timestamps:true

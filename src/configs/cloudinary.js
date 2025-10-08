@@ -14,7 +14,7 @@ export const uploadFileToCloudinary = async (files, folderName = "default") => {
   try {
     // Ensure files is always an array for uniform processing
     const fileArray = Array.isArray(files) ? files : [files];
-
+    console.log("the files inside are", fileArray)
     // Map each file to the upload function
     const uploadPromises = fileArray.map((file) =>
       cloudinary.uploader.upload(file.path, {

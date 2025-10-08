@@ -17,7 +17,8 @@ import packageRouter from "./src/routes/package.routes.js"
 import router from './src/routes/auth.js'
 import userRouter from "./src/routes/user/user.js";
 import activityRouter from "./src/routes/activity.routes.js"
-
+import categoryRouter from "./src/routes/category.routes.js"
+import destinationRouter from "./src/routes/destination.routes.js"
 configDotenv()
 
 const app = express()
@@ -65,8 +66,8 @@ app.use(`/api/v1/package`, packageRouter)
 app.use(`/api/v1/activity`, activityRouter)
 app.use(`/api`, router);
 app.use(`/api/v1/user`, userRouter);
-
-
+app.use(`/api/v1/category`,categoryRouter)
+app.use(`/api/v1/destination`,destinationRouter)
 
 
 /** */
