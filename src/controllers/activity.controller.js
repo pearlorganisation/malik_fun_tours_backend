@@ -1,6 +1,12 @@
-import { uploadMultipleImageBuffersToCloudinary } from "../configs/streamupload.js";
-import { Activity } from "../models/Activity.js";
-import { asyncHandler } from "../utils/error/asyncHandler.js";
+import {
+  uploadMultipleImageBuffersToCloudinary
+} from "../configs/streamupload.js";
+import {
+  Activity
+} from "../models/Activity.js";
+import {
+  asyncHandler
+} from "../utils/error/asyncHandler.js";
 
 
 //Create activity api
@@ -28,39 +34,39 @@ export const create_activity = asyncHandler(async (req, res, next) => {
   // Parse stringified JSON fields
   if (activity_options && activity_options.length > 0) {
     payload.activity_options =
-      typeof activity_options === "string"
-        ? JSON.parse(activity_options)
-        : activity_options;
+      typeof activity_options === "string" ?
+      JSON.parse(activity_options) :
+      activity_options;
   }
 
   if (activity_meta_details && activity_meta_details.length > 0) {
     payload.activity_meta_details =
-      typeof activity_meta_details === "string"
-        ? JSON.parse(activity_meta_details)
-        : activity_meta_details;
+      typeof activity_meta_details === "string" ?
+      JSON.parse(activity_meta_details) :
+      activity_meta_details;
   }
 
   if (activity_location) {
     payload.activity_location =
-      typeof activity_location === "string"
-        ? JSON.parse(activity_location)
-        : activity_location;
+      typeof activity_location === "string" ?
+      JSON.parse(activity_location) :
+      activity_location;
   }
 
-  if (important_information) {
+  if (important_information && important_information.length>0) {
     payload.important_information =
-      typeof important_information === "string"
-        ? JSON.parse(important_information)
-        : important_information;
+      typeof important_information === "string" ?
+      JSON.parse(important_information) :
+      important_information;
   }
 
-  if (not_suitable_for) {
+  if (not_suitable_for && not_suitable_for.length >0) {
     payload.not_suitable_for =
-      typeof not_suitable_for === "string"
-        ? JSON.parse(not_suitable_for)
-        : not_suitable_for;
+      typeof not_suitable_for === "string" ?
+      JSON.parse(not_suitable_for) :
+      not_suitable_for;
   }
-
+console.log("not suitable for", not_suitable_for,important_information)
   const data = await Activity.create({
     ...req.body,
     ...payload,
@@ -79,9 +85,14 @@ export const get_all_activities = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 4;
   const skip = (page - 1) * limit;
+  const destination = req.query.destination
+  let filter = {}
+  if (destination) {
+    filter.destination = destination
+  }
 
-  const activities = await Activity.find().skip(skip).limit(limit);
-  const total = await Activity.countDocuments();
+  const activities = await Activity.find(filter).skip(skip).limit(limit);
+  const total = await Activity.countDocuments(filter);
 
   return res.status(200).json({
     success: true,
@@ -99,7 +110,9 @@ export const get_all_activities = asyncHandler(async (req, res, next) => {
 
 // DELETE ACTIVITY BY ID
 export const delete_activity = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
+  const {
+    id
+  } = req.params;
 
   const activity = await Activity.findById(id);
   if (!activity) {
@@ -120,7 +133,9 @@ export const delete_activity = asyncHandler(async (req, res, next) => {
 
 // UPDATE ACTIVITY BY ID
 export const update_activity = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
+  const {
+    id
+  } = req.params;
 
   let activity = await Activity.findById(id);
   if (!activity) {
@@ -154,47 +169,48 @@ export const update_activity = asyncHandler(async (req, res, next) => {
   // Parse JSON fields if needed
   if (activity_options) {
     payload.activity_options =
-      typeof activity_options === "string"
-        ? JSON.parse(activity_options)
-        : activity_options;
+      typeof activity_options === "string" ?
+      JSON.parse(activity_options) :
+      activity_options;
   }
 
   if (activity_meta_details) {
     payload.activity_meta_details =
-      typeof activity_meta_details === "string"
-        ? JSON.parse(activity_meta_details)
-        : activity_meta_details;
+      typeof activity_meta_details === "string" ?
+      JSON.parse(activity_meta_details) :
+      activity_meta_details;
   }
 
   if (activity_location) {
     payload.activity_location =
-      typeof activity_location === "string"
-        ? JSON.parse(activity_location)
-        : activity_location;
+      typeof activity_location === "string" ?
+      JSON.parse(activity_location) :
+      activity_location;
   }
 
   if (important_information) {
     payload.important_information =
-      typeof important_information === "string"
-        ? JSON.parse(important_information)
-        : important_information;
+      typeof important_information === "string" ?
+      JSON.parse(important_information) :
+      important_information;
   }
 
   if (not_suitable_for) {
     payload.not_suitable_for =
-      typeof not_suitable_for === "string"
-        ? JSON.parse(not_suitable_for)
-        : not_suitable_for;
+      typeof not_suitable_for === "string" ?
+      JSON.parse(not_suitable_for) :
+      not_suitable_for;
   }
 
   // Update activity
   activity = await Activity.findByIdAndUpdate(
-    id,
-    {
+    id, {
       ...req.body,
       ...payload,
-    },
-    { new: true, runValidators: true }
+    }, {
+      new: true,
+      runValidators: true
+    }
   );
 
   return res.status(200).json({
@@ -208,7 +224,9 @@ export const update_activity = asyncHandler(async (req, res, next) => {
 //get activity by id
 // GET ACTIVITY BY ID
 export const get_activity_by_id = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
+  const {
+    id
+  } = req.params;
 
   const activity = await Activity.findById(id);
 

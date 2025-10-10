@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Schema } from 'mongoose'
 
 const activity_schema=new mongoose.Schema({
     activity_name:{type:String, required:true ,index: true},
@@ -52,7 +52,12 @@ const activity_schema=new mongoose.Schema({
 
      activity_highlights:{type:String},
      important_information:[String],
-     not_suitable_for:[String]
+     not_suitable_for:[String],
+     destination:{
+        type:Schema.Types.ObjectId,
+        ref: "Destination",
+        index:true
+     }
      },
      {
        timestamps:true
