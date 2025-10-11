@@ -19,6 +19,8 @@ import userRouter from "./src/routes/user/user.js";
 import activityRouter from "./src/routes/activity.routes.js"
 import categoryRouter from "./src/routes/category.routes.js"
 import destinationRouter from "./src/routes/destination.routes.js"
+import vehicleRouter from "./src/routes/vehicle.routes.js"
+import orderRouter from "./src/routes/order.routes.js"
 configDotenv()
 
 const app = express()
@@ -68,8 +70,8 @@ app.use(`/api`, router);
 app.use(`/api/v1/user`, userRouter);
 app.use(`/api/v1/category`,categoryRouter)
 app.use(`/api/v1/destination`,destinationRouter)
-
-
+app.use(`/api/v1/vehicle`,vehicleRouter)
+app.use(`/api/v1/order`,orderRouter)
 /** */
 
 app.use(errorHandler);

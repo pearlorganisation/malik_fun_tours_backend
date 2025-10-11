@@ -26,7 +26,11 @@ const tour_schema = new mongoose.Schema({
             child:{type:Number},
             infant:{type:Number}
         },
-        isAvailable:{type:Boolean}
+        isAvailable:{type:Boolean},
+        vehicle:{
+            type:Schema.Types.ObjectId,
+            ref:"Vehicle"
+        }
      }],
      itinerary:[
         {
