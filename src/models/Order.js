@@ -20,6 +20,11 @@ const order_schema = new mongoose.Schema({
         type:String,
         enum:["Pending","Completed","Cancelled","Refunded"],
         default:"Pending"
+    },
+    tour_status:{
+      type:String,
+      enum: ["Upcoming", "Completed", "Cancelled", "Refunded"],
+      default:"Upcoming"
     }
 },{
     timestamps:true
