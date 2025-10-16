@@ -33,7 +33,7 @@ const activity_schema=new mongoose.Schema({
         rating: { type: Number, min: 0, max: 5 },
         isAvailable:{type:Boolean}
      }],
-
+    
      activity_location:
              {
                  location_name:{type:String},
@@ -57,7 +57,8 @@ const activity_schema=new mongoose.Schema({
         type:Schema.Types.ObjectId,
         ref: "Destination",
         index:true
-     }
+     },
+     common_price:{type:Number}
      },
      {
        timestamps:true
