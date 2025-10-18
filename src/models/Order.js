@@ -7,7 +7,7 @@ const order_schema = new mongoose.Schema({
     package_id:{type:Schema.Types.ObjectId, ref:"Package"},
     selected_package_option:{ type:String },
     tour_itinerary_details:{
-     tour_time:{type: String},
+    tour_time:{type: String},
       people_meta:{
         total:{type:Number},
         adults:{type:Number},
@@ -25,7 +25,19 @@ const order_schema = new mongoose.Schema({
       type:String,
       enum: ["Upcoming", "Completed", "Cancelled", "Refunded"],
       default:"Upcoming"
-    }
+    },
+    extra_add_ons:[
+      {
+        activity:{
+          type:Schema.Types.ObjectId,
+          ref:"Activity"},
+        voucher:{
+          type:Schema.Types.ObjectId,
+          ref:"Voucher"
+        }
+      }
+    ],
+
 },{
     timestamps:true
 })

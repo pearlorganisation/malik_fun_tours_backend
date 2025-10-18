@@ -5,6 +5,7 @@ import {
 import cookieParser from 'cookie-parser'
 import morgan from 'morgan'
 import cors from 'cors'
+import bodyParser from 'body-parser'
 import {
   errorHandler
 } from './src/middlewares/errorHandler.js'
@@ -21,8 +22,11 @@ import categoryRouter from "./src/routes/category.routes.js"
 import destinationRouter from "./src/routes/destination.routes.js"
 import vehicleRouter from "./src/routes/vehicle.routes.js"
 import orderRouter from "./src/routes/order.routes.js"
+import stripeWebhookRouter from "./src/routes/stripe_webhook.routes.js"
+import { webhook_handler } from './src/controllers/order.controller.js'
 configDotenv()
 
+const stripe_parser = bodyParser.raw({type:'application/json'})
 const app = express()
 
 app.use(cors({
@@ -46,7 +50,15 @@ app.use(cors({
   credentials: true,
 }))
 
-app.use(express.json())
+// app.use(express.json())
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/v1/stripe/webhook") {
+    next()
+  } else {
+    express.json()(req, res, next)
+  }
+})
+
 app.use(express.urlencoded({
   extended: true
 }))
@@ -72,7 +84,13 @@ app.use(`/api/v1/category`,categoryRouter)
 app.use(`/api/v1/destination`,destinationRouter)
 app.use(`/api/v1/vehicle`,vehicleRouter)
 app.use(`/api/v1/order`,orderRouter)
-/** */
+app.post(
+  "/api/v1/stripe/webhook",
+  bodyParser.raw({
+    type: "application/json"
+  }),
+  webhook_handler
+)
 
 app.use(errorHandler);
 
