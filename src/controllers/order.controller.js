@@ -20,6 +20,8 @@ const generate_voucher = ()=>{
 }
 
 export const create_order =asyncHandler(async(req, res , next)=>{
+    const type = req.query
+
     const {
         user,
         order_amount,
@@ -35,8 +37,11 @@ export const create_order =asyncHandler(async(req, res , next)=>{
             enabled:true
         }
     })
+    let payload
     console.log("extra_addons_before", extra_add_ons)
     let extra_addons_result =null
+    // for package booking
+    if(type==2){
     if(extra_add_ons && extra_add_ons?.length>0){
          extra_addons_result = await Promise.all(extra_add_ons?.map(async (activityId) => {
             let voucherdata = await Voucher.create({
@@ -51,7 +56,7 @@ export const create_order =asyncHandler(async(req, res , next)=>{
          }))
     }
     console.log("extra_addons result is", extra_addons_result)
-    let payload = {
+      payload = {
         order_id:order.id,
         user:user,
         order_amount:order_amount,
@@ -60,7 +65,10 @@ export const create_order =asyncHandler(async(req, res , next)=>{
         tour_itinerary_details:tour_itinerary_details,
         extra_add_ons: extra_addons_result
     }
-
+    }
+    // if(type==1){
+    //     pa
+    // }
     const order_data = await Order.create(payload)
     console.log("the created order is", order_data)
     console.log(order,"order")

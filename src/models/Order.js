@@ -4,6 +4,14 @@ const order_schema = new mongoose.Schema({
     order_id:{type:String},
     user:{ type:Schema.Types.ObjectId, ref:"User"},
     order_amount:{ type: Number},
+    order_type:{
+      type:Number,
+      enum:[1,2] // 1 for activities booking only 2 for package bookings
+    },
+    activities_id:[{
+      type:Schema.Types.ObjectId,
+      ref: 'Activity'
+    }],
     package_id:{type:Schema.Types.ObjectId, ref:"Package"},
     selected_package_option:{ type:String },
     tour_itinerary_details:{
