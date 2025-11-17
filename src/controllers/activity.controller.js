@@ -32,6 +32,7 @@ export const create_activity = asyncHandler(async (req, res, next) => {
   }
 
   // Parse stringified JSON fields
+  //test comit
   if (activity_options && activity_options.length > 0) {
     payload.activity_options =
       typeof activity_options === "string" ?
