@@ -3,6 +3,19 @@ import { uploadMultipleImageBuffersToCloudinary } from "../configs/streamupload.
 import { Package } from "../models/TourPackage.js";
 import { asyncHandler } from "../utils/error/asyncHandler.js";
 
+// Helper function to clean _id for subdocuments
+const cleanSubdocumentIds = (items) => {
+  if (!Array.isArray(items)) return items;
+
+  return items.map((item) => {
+    if (item._id && !mongoose.Types.ObjectId.isValid(item._id)) {
+      const { _id, ...rest } = item;
+      return rest;
+    }
+    return item;
+  });
+};
+
 export const create_package = asyncHandler(async (req, res, next) => {
   const {
     package_options,
@@ -134,7 +147,7 @@ export const delete_package = asyncHandler(async (req, res, next) => {
 //update package by id
 export const update_package = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-console.log("1st")
+  console.log("1st");
   let pkg = await Package.findById(id);
   if (!pkg) {
     return res.status(404).json({
@@ -151,7 +164,10 @@ console.log("1st")
     inclusions,
     exclusions,
     package_available_dates,
+    not_suitable_for,
   } = req.body;
+
+  console.log("🎀Incoming META:", package_meta_details);
 
   const payload = {};
 
@@ -167,22 +183,27 @@ console.log("1st")
   }
 
   if (package_options) {
-    payload.package_options =
+    payload.package_options = cleanSubdocumentIds(
       typeof package_options === "string"
         ? JSON.parse(package_options)
-        : package_options;
+        : package_options
+    );
   }
 
   if (itinerary) {
-    payload.itinerary =
-      typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary;
+    // Clean _id for itinerary
+    payload.itinerary = cleanSubdocumentIds(
+      typeof itinerary === "string" ? JSON.parse(itinerary) : itinerary
+    );
   }
 
   if (package_meta_details) {
-    payload.package_meta_details =
+    // Clean _id for package_meta_details
+    payload.package_meta_details = cleanSubdocumentIds(
       typeof package_meta_details === "string"
         ? JSON.parse(package_meta_details)
-        : package_meta_details;
+        : package_meta_details
+    );
   }
 
   if (inclusions) {
@@ -201,7 +222,22 @@ console.log("1st")
         ? JSON.parse(important_information)
         : important_information;
   }
-    pkg = await Package.findByIdAndUpdate(
+
+  if (package_available_dates) {
+    payload.package_available_dates =
+      typeof package_available_dates === "string"
+        ? JSON.parse(package_available_dates)
+        : package_available_dates;
+  }
+
+  if (not_suitable_for) {
+    payload.not_suitable_for =
+      typeof not_suitable_for === "string"
+        ? JSON.parse(not_suitable_for)
+        : not_suitable_for;
+  }
+
+  pkg = await Package.findByIdAndUpdate(
     id,
     {
       ...req.body,
@@ -221,14 +257,16 @@ console.log("1st")
 export const get_package_by_id = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const pkg = await Package.findById({_id:id})
-  .populate([{
-    path: "itinerary.activities", // path to populate
-    model: "Activity" // the model to use
-  },{
-    path: "package_options.vehicle",
-    model:"Vehicle"
-  }])
+  const pkg = await Package.findById({ _id: id }).populate([
+    {
+      path: "itinerary.activities", // path to populate
+      model: "Activity", // the model to use
+    },
+    {
+      path: "package_options.vehicle",
+      model: "Vehicle",
+    },
+  ]);
   // .exec();
 
   if (!pkg) {
