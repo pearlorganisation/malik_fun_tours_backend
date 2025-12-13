@@ -24,6 +24,7 @@ import vehicleRouter from "./src/routes/vehicle.routes.js"
 import orderRouter from "./src/routes/order.routes.js"
 import stripeWebhookRouter from "./src/routes/stripe_webhook.routes.js"
 import { webhook_handler } from './src/controllers/order.controller.js'
+import tagRouter from "./src/routes/tag.routes.js"
 configDotenv()
 
 const stripe_parser = bodyParser.raw({type:'application/json'})
@@ -91,6 +92,7 @@ app.post(
   }),
   webhook_handler
 )
+app.use(`/api/v1/tag/`,tagRouter)
 
 app.use(errorHandler);
 
