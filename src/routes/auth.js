@@ -4,6 +4,7 @@ import { authenticateToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
+//test comit
 router.post(`/register`,register);
 router.post(`/verify-otp`,verifyOTP)
 router.post(`/resend-otp`,resendOTP);
