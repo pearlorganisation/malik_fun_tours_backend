@@ -1,246 +1,92 @@
-import {
-  uploadMultipleImageBuffersToCloudinary
-} from "../configs/streamupload.js";
-import {
-  Activity
-} from "../models/Activity.js";
-import {
-  asyncHandler
-} from "../utils/error/asyncHandler.js";
+import Activity from "../models/Activity.js";
 
+// GET all activities (with optional filters)
+export const getAllActivities = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, isActive } = req.query;
+    const filter =
+      isActive !== undefined ? { isActive: isActive === "true" } : {};
 
-//Create activity api
-export const create_activity = asyncHandler(async (req, res, next) => {
-  const {
-    activity_options,
-    activity_meta_details,
-    activity_location,
-    important_information,
-    not_suitable_for,
-  } = req.body;
+    const activities = await Activity.find(filter)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .sort({ createdAt: -1 });
 
-  const payload = {};
+    const total = await Activity.countDocuments(filter);
 
-  // Upload images if provided
-  let uploadResults = await uploadMultipleImageBuffersToCloudinary(
-    req.files.activity_images,
-    "activity_images"
-  );
-
-  if (uploadResults != null) {
-    payload.activity_images = uploadResults;
-  }
-
-  // Parse stringified JSON fields
-  //test comit
-  if (activity_options && activity_options.length > 0) {
-    payload.activity_options =
-      typeof activity_options === "string" ?
-      JSON.parse(activity_options) :
-      activity_options;
-  }
-
-  if (activity_meta_details && activity_meta_details.length > 0) {
-    payload.activity_meta_details =
-      typeof activity_meta_details === "string" ?
-      JSON.parse(activity_meta_details) :
-      activity_meta_details;
-  }
-
-  if (activity_location) {
-    payload.activity_location =
-      typeof activity_location === "string" ?
-      JSON.parse(activity_location) :
-      activity_location;
-  }
-
-  if (important_information && important_information.length>0) {
-    payload.important_information =
-      typeof important_information === "string" ?
-      JSON.parse(important_information) :
-      important_information;
-  }
-
-  if (not_suitable_for && not_suitable_for.length >0) {
-    payload.not_suitable_for =
-      typeof not_suitable_for === "string" ?
-      JSON.parse(not_suitable_for) :
-      not_suitable_for;
-  }
-console.log("not suitable for", not_suitable_for,important_information)
-  const data = await Activity.create({
-    ...req.body,
-    ...payload,
-  });
-
-  return res.status(201).json({
-    success: true,
-    message: "Activity created successfully",
-    data,
-  });
-});
-
-
-// GET ALL ACTIVITIES (with pagination)
-export const get_all_activities = asyncHandler(async (req, res, next) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 4;
-  const skip = (page - 1) * limit;
-  const destination = req.query.destination
-  let filter = {}
-  if (destination) {
-    filter.destination = destination
-  }
-
-  const activities = await Activity.find(filter).skip(skip).limit(limit);
-  const total = await Activity.countDocuments(filter);
-
-  return res.status(200).json({
-    success: true,
-    message: "Activities fetched successfully",
-    data: activities,
-    pagination: {
+    res.json({
+      activities,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
-});
-
-
-// DELETE ACTIVITY BY ID
-export const delete_activity = asyncHandler(async (req, res, next) => {
-  const {
-    id
-  } = req.params;
-
-  const activity = await Activity.findById(id);
-  if (!activity) {
-    return res.status(404).json({
-      success: false,
-      message: "Activity not found",
+      page: parseInt(page),
+      pages: Math.ceil(total / limit),
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+};
 
-  await Activity.findByIdAndDelete(id);
-
-  return res.status(200).json({
-    success: true,
-    message: "Activity deleted successfully",
-  });
-});
-
-
-// UPDATE ACTIVITY BY ID
-export const update_activity = asyncHandler(async (req, res, next) => {
-  const {
-    id
-  } = req.params;
-
-  let activity = await Activity.findById(id);
-  if (!activity) {
-    return res.status(404).json({
-      success: false,
-      message: "Activity not found",
-    });
+// GET single activity by ID
+export const getActivityById = async (req, res) => {
+  try {
+    const activity = await Activity.findById(req.params.id);
+    if (!activity)
+      return res.status(404).json({ message: "Activity not found" });
+    res.json(activity);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+};
 
-  const {
-    activity_options,
-    activity_meta_details,
-    activity_location,
-    important_information,
-    not_suitable_for,
-  } = req.body;
-
-  const payload = {};
-
-  // Handle new image uploads
-  if (req.files && req.files.activity_images) {
-    let uploadResults = await uploadMultipleImageBuffersToCloudinary(
-      req.files.activity_images,
-      "activity_images"
-    );
-    if (uploadResults != null) {
-      payload.activity_images = uploadResults;
-    }
+// CREATE new activity
+export const createActivity = async (req, res) => {
+  try {
+    const activity = new Activity(req.body);
+    await activity.save();
+    res.status(201).json(activity);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
+};
 
-  // Parse JSON fields if needed
-  if (activity_options) {
-    payload.activity_options =
-      typeof activity_options === "string" ?
-      JSON.parse(activity_options) :
-      activity_options;
-  }
-
-  if (activity_meta_details) {
-    payload.activity_meta_details =
-      typeof activity_meta_details === "string" ?
-      JSON.parse(activity_meta_details) :
-      activity_meta_details;
-  }
-
-  if (activity_location) {
-    payload.activity_location =
-      typeof activity_location === "string" ?
-      JSON.parse(activity_location) :
-      activity_location;
-  }
-
-  if (important_information) {
-    payload.important_information =
-      typeof important_information === "string" ?
-      JSON.parse(important_information) :
-      important_information;
-  }
-
-  if (not_suitable_for) {
-    payload.not_suitable_for =
-      typeof not_suitable_for === "string" ?
-      JSON.parse(not_suitable_for) :
-      not_suitable_for;
-  }
-
-  // Update activity
-  activity = await Activity.findByIdAndUpdate(
-    id, {
-      ...req.body,
-      ...payload,
-    }, {
+// UPDATE activity (full replace or partial)
+export const updateActivity = async (req, res) => {
+  try {
+    const activity = await Activity.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
-      runValidators: true
-    }
-  );
-
-  return res.status(200).json({
-    success: true,
-    message: "Activity updated successfully",
-    data: activity,
-  });
-});
-
-
-//get activity by id
-// GET ACTIVITY BY ID
-export const get_activity_by_id = asyncHandler(async (req, res, next) => {
-  const {
-    id
-  } = req.params;
-
-  const activity = await Activity.findById(id);
-
-  if (!activity) {
-    return res.status(404).json({
-      success: false,
-      message: "Activity not found",
+      runValidators: true,
     });
+    if (!activity)
+      return res.status(404).json({ message: "Activity not found" });
+    res.json(activity);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
+};
 
-  return res.status(200).json({
-    success: true,
-    message: "Activity fetched successfully",
-    data: activity,
-  });
-});
+// DELETE activity
+export const deleteActivity = async (req, res) => {
+  try {
+    const activity = await Activity.findByIdAndDelete(req.params.id);
+    if (!activity)
+      return res.status(404).json({ message: "Activity not found" });
+    res.json({ message: "Activity deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Toggle active status (soft enable/disable)
+export const toggleActive = async (req, res) => {
+  try {
+    const activity = await Activity.findById(req.params.id);
+    if (!activity)
+      return res.status(404).json({ message: "Activity not found" });
+
+    activity.isActive = !activity.isActive;
+    await activity.save();
+
+    res.json(activity);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

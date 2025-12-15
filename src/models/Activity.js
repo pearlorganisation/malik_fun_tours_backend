@@ -1,86 +1,124 @@
-import mongoose, { Schema } from 'mongoose'
+import mongoose from "mongoose";
 
-const activity_schema=new mongoose.Schema({
-    activity_name:{type:String, required:true ,index: true},
-    activity_images:[{
-        secure_url:{type:String},
-        public_id:{type:String}
-    }],
-    activity_description:{type:String,required:true},
+const ImageSchema = new mongoose.Schema({
+  url: { type: String, required: true },
+  alt: { type: String },
+  isMain: { type: Boolean, default: false },
+});
 
-    activity_meta_details:[{
-        title:{type:String},
-        mini_description:{type:String}
-    }],
-    activity_category:{type:String},
-    indexed_splitted_activity_name: [{ type: String, index: true }],
+const PricingSchema = new mongoose.Schema({
+  label: String, // e.g. "Adult", "Child"
+  type: {
+    type: String,
+    enum: ["per_person", "per_vehicle", "flat"],
+    required: true,
+  },
+  minParticipants: Number,
+  maxParticipants: Number,
+  price: { type: Number, required: true },
+  currency: { type: String, default: "AED" },
+});
 
-    activity_options:[{
-        title:{type:String},
-        description:{type:String},
-        duration:{type:String},
-        guide:{type:String },
-        activity_type:{type:String},
-        activity_timings:{ 
-            isMorning:{type:Boolean},
-            isEvening:{type:Boolean}
-        },
-        prices:{
-            adult:{type:Number},
-            child:{type:Number},
-            infant:{type:Number}
-        },
-        rating: { type: Number, min: 0, max: 5 },
-        isAvailable:{type:Boolean}
-     }],
-    
-     activity_location:
-             {
-                 location_name:{type:String},
-                 location: {
-                         type: {
-                             type: String,
-                             enum: ["Point"],
-                             default: "Point"
-                         },
-                         coordinates: {
-                             type: [Number],
-                             required: true
-                         }
-                 },
-             },
+const TimeSlotSchema = new mongoose.Schema({
+  startTime: String, // "08:00 AM"
+  isAvailable: { type: Boolean, default: true },
+});
 
-     activity_highlights:{type:String},
-     important_information:[String],
-     not_suitable_for:[String],
-     destination:{
-        type:Schema.Types.ObjectId,
-        ref: "Destination",
-        index:true
-     },
-     common_price:{type:Number}
-     },
-     {
-       timestamps:true
-     })
+const ItinerarySchema = new mongoose.Schema({
+  title: String, // Pickup, Desert Stop, Drop-off
+  location: String,
+  activities: [String],
+  optionalAddons: [String],
+});
 
+const AddonSchema = new mongoose.Schema({
+  title: String,
+  duration: String, // "30 min"
+  price: Number,
+});
 
-    activity_schema.index({ "itinerary.location": "2dsphere" });
+const VariantSchema = new mongoose.Schema({
+  name: { type: String, required: true }, // e.g. "Standard", "Premium", "VIP", "Private", "Super Deluxe"
+  description: String, // Short description of what makes this variant special
+  images: [ImageSchema], // Variant-specific images (optional)
+  pricing: [PricingSchema], // Pricing for this variant (e.g. Adult/Child prices)
+  includes: [String], // What is included in this variant
+  excludes: [String], // What is NOT included (or extra)
+  addons: [AddonSchema], // Optional addons specific to this variant
+  highlights: [String], // Key highlights/upgrades for this variant
+  discount: {
+    percentage: Number,
+    label: String, // e.g. "Save 20%"
+  },
+  isActive: { type: Boolean, default: true },
+});
 
-    activity_schema.pre("save",function(next){
-      if(this.isModified("activity_name")||this.isNew){
-        const name = this.activity_name.toLowerCase().replace(/\s+/g, "");
-        const substrings = new Set()
+const ActivitySchema = new mongoose.Schema(
+  {
+    // ---------------- BASIC INFO ----------------
+    title: { type: String, required: true }, // e.g. "Evening Desert Safari"
+    shortDescription: String,
+    fullDescription: String,
 
-        for(let len=2; len<=5;len++){ 
-            for(let i=0;i<=name.length-len;i++){
-                substrings.add(name.substring(i, i+len))
-            }
-        }
-        this.indexed_splitted_activity_name = Array.from(substrings)
-      }
-      next();
-    })
+    // ---------------- MAIN IMAGES (shared across variants) ----------------
+    images: [ImageSchema],
 
+    // ---------------- META DETAILS (shared) ----------------
+    duration: {
+      label: String, // "7 Hours"
+      hours: Number,
+    },
+    languages: [String],
+    liveGuide: Boolean,
 
-    export const Activity = mongoose.model("Activity", activity_schema)
+    // ---------------- POLICIES (shared) ----------------
+    cancellationPolicy: {
+      isFreeCancellation: Boolean,
+      hoursBefore: Number,
+    },
+    reservePolicy: {
+      payLater: Boolean,
+      description: String,
+    },
+
+    // ---------------- PICKUP (shared or can vary per variant) ----------------
+    pickup: {
+      included: Boolean,
+      description: String,
+      locations: [String],
+      privateForOutskirts: Boolean,
+    },
+
+    // ---------------- VARIANTS (multiple plans/packages) ----------------
+    variants: [VariantSchema], // This replaces the old single 'pricing' array
+
+    // ---------------- AVAILABILITY (shared) ----------------
+    availableDates: [Date],
+    timeSlots: [TimeSlotSchema],
+
+    // ---------------- ITINERARY (shared or variant-specific if needed) ----------------
+    itinerary: [ItinerarySchema],
+
+    // ---------------- SHARED HIGHLIGHTS / INCLUSIONS ----------------
+    highlights: [String],
+    includes: [String],
+    excludes: [String],
+
+    // ---------------- SHARED ADDONS (if common) ----------------
+    addons: [AddonSchema],
+
+    // ---------------- RESTRICTIONS ----------------
+    notSuitableFor: [String],
+    importantInfo: [String],
+
+    // ---------------- REVIEWS ----------------
+    rating: { type: Number, default: 0 },
+    reviewCount: { type: Number, default: 0 },
+
+    // ---------------- STATUS ----------------
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model("Activity", ActivitySchema);

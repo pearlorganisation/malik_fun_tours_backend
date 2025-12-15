@@ -1,32 +1,20 @@
 import express from "express";
-import { upload } from "../middlewares/multer.js";
 import {
-  create_activity,
-  get_all_activities,
-  delete_activity,
-  update_activity,
-  get_activity_by_id
+  getAllActivities,
+  getActivityById,
+  createActivity,
+  updateActivity,
+  deleteActivity,
+  toggleActive,
 } from "../controllers/activity.controller.js";
 
 const router = express.Router();
 
-
-router.route(`/`)
-  .post(
-    upload.fields([{ name: "activity_images", maxCount: 10 }]),
-    create_activity
-  )
-  .get(get_all_activities);
-
-router.route(`/:id`).delete(delete_activity);
-router.get("/:id", get_activity_by_id); 
-
-router.patch(
-  `/update/:id`,
-  upload.fields([{ name: "activity_images", maxCount: 10 }]),
-  update_activity
-);
-
-
+router.get("/", getAllActivities); // GET /api/admin/activities
+router.get("/:id", getActivityById); // GET /api/admin/activities/:id
+router.post("/", createActivity); // POST /api/admin/activities
+router.put("/:id", updateActivity); // PUT /api/admin/activities/:id
+router.delete("/:id", deleteActivity); // DELETE /api/admin/activities/:id
+router.patch("/:id/toggle-active", toggleActive); // PATCH toggle status
 
 export default router;
