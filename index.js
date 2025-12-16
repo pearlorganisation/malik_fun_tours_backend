@@ -18,6 +18,7 @@ import packageRouter from "./src/routes/package.routes.js"
 import router from './src/routes/auth.js'
 import userRouter from "./src/routes/user/user.js";
 import activityRouter from "./src/routes/activity.routes.js"
+import bookingRouter from "./src/routes/booking.routes.js"
 import categoryRouter from "./src/routes/category.routes.js"
 import destinationRouter from "./src/routes/destination.routes.js"
 import vehicleRouter from "./src/routes/vehicle.routes.js"
@@ -84,6 +85,7 @@ app.use(`/api/v1/user`, userRouter);
 app.use(`/api/v1/category`,categoryRouter)
 app.use(`/api/v1/destination`,destinationRouter)
 app.use(`/api/v1/vehicle`,vehicleRouter)
+app.use(`/api/v1/bookings`,bookingRouter)
 app.use(`/api/v1/order`,orderRouter)
 app.post(
   "/api/v1/stripe/webhook",
