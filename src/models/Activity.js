@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const ImageSchema = new mongoose.Schema({
   url: { type: String, required: true },
+  public_id: { type: String, required: true }, // Needed for deletion
   alt: { type: String },
   isMain: { type: Boolean, default: false },
 });
@@ -62,7 +63,11 @@ const ActivitySchema = new mongoose.Schema(
 
     // ---------------- MAIN IMAGES (shared across variants) ----------------
     images: [ImageSchema],
-
+    // Promotional video
+    video: {
+      url: { type: String },
+      public_id: { type: String }, // For deletion if needed
+    },
     // ---------------- META DETAILS (shared) ----------------
     duration: {
       label: String, // "7 Hours"

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { USER_ROLES_ENUM } from "../../../constants.js";
+import { USER_ROLES_ENUM } from "../../constants.js";
 
 const user_schema= new mongoose.Schema({
     name:{type:String, required:true},
@@ -38,6 +38,7 @@ user_schema.methods.generateAccessToken = function () {
       _id: this._id,
       email: this.email,
       name: this.name,
+      role: this.role,
      // role: this.role,
     },
     process.env.ACCESS_TOKEN_SECRET,

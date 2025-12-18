@@ -14,18 +14,10 @@ import {
 } from './src/configs/db.js'
 
 //routes
-import packageRouter from "./src/routes/package.routes.js"
-import router from './src/routes/auth.js'
-import userRouter from "./src/routes/user/user.js";
+import authRouter from "./src/routes/auth.routes.js";
+import userRouter from "./src/routes/user.routes.js";
 import activityRouter from "./src/routes/activity.routes.js"
 import bookingRouter from "./src/routes/booking.routes.js"
-import categoryRouter from "./src/routes/category.routes.js"
-import destinationRouter from "./src/routes/destination.routes.js"
-import vehicleRouter from "./src/routes/vehicle.routes.js"
-import orderRouter from "./src/routes/order.routes.js"
-import stripeWebhookRouter from "./src/routes/stripe_webhook.routes.js"
-import { webhook_handler } from './src/controllers/order.controller.js'
-import tagRouter from "./src/routes/tag.routes.js"
 configDotenv()
 
 const stripe_parser = bodyParser.raw({type:'application/json'})
@@ -52,18 +44,11 @@ app.use(cors({
   credentials: true,
 }))
 
-// app.use(express.json())
-app.use((req, res, next) => {
-  if (req.originalUrl === "/api/v1/stripe/webhook") {
-    next()
-  } else {
-    express.json()(req, res, next)
-  }
-})
 
 app.use(express.urlencoded({
   extended: true
 }))
+app.use(express.json({limit:'10mb'}))
 app.use(cookieParser())
 app.use(morgan("dev"))
 app.set("view engine", "ejs")
@@ -78,23 +63,10 @@ app.use(`/health`, async (req, res) => {
 /** declare our routes */
 
 
-app.use(`/api/v1/package`, packageRouter)
 app.use(`/api/v1/activity`, activityRouter)
-app.use(`/api`, router);
+app.use(`/api/v1/auth`, authRouter);
 app.use(`/api/v1/user`, userRouter);
-app.use(`/api/v1/category`,categoryRouter)
-app.use(`/api/v1/destination`,destinationRouter)
-app.use(`/api/v1/vehicle`,vehicleRouter)
 app.use(`/api/v1/bookings`,bookingRouter)
-app.use(`/api/v1/order`,orderRouter)
-app.post(
-  "/api/v1/stripe/webhook",
-  bodyParser.raw({
-    type: "application/json"
-  }),
-  webhook_handler
-)
-app.use(`/api/v1/tag/`,tagRouter)
 
 app.use(errorHandler);
 

@@ -1,4 +1,7 @@
 import Activity from "../models/Activity.js";
+import { uploadFileToCloudinary } from "../configs/cloudinary.js";
+import { parseJSON } from "../utils/parseJson.js";
+
 
 // GET all activities (with optional filters)
 export const getAllActivities = async (req, res) => {
@@ -40,11 +43,78 @@ export const getActivityById = async (req, res) => {
 // CREATE new activity
 export const createActivity = async (req, res) => {
   try {
-    const activity = new Activity(req.body);
-    await activity.save();
-    res.status(201).json(activity);
+    console.log("req video file:", req.files?.video);
+    console.log("req image files:", req.files?.images);
+
+    /* ---------------- PARSE BODY ---------------- */
+    const data = {
+      title: req.body.title,
+      shortDescription: req.body.shortDescription,
+      fullDescription: req.body.fullDescription,
+
+      duration: parseJSON(req.body.duration, {}),
+      languages: parseJSON(req.body.languages, []),
+      liveGuide: req.body.liveGuide === "true",
+
+      cancellationPolicy: parseJSON(req.body.cancellationPolicy, {}),
+      reservePolicy: parseJSON(req.body.reservePolicy, {}),
+      pickup: parseJSON(req.body.pickup, {}),
+
+      variants: parseJSON(req.body.variants, []),
+      availableDates: parseJSON(req.body.availableDates, []),
+      timeSlots: parseJSON(req.body.timeSlots, []),
+      itinerary: parseJSON(req.body.itinerary, []),
+      highlights: parseJSON(req.body.highlights, []),
+      includes: parseJSON(req.body.includes, []),
+      excludes: parseJSON(req.body.excludes, []),
+      addons: parseJSON(req.body.addons, []),
+      notSuitableFor: parseJSON(req.body.notSuitableFor, []),
+      importantInfo: parseJSON(req.body.importantInfo, []),
+
+      isActive: req.body.isActive === "true",
+    };
+
+    /* ---------------- UPLOAD IMAGES ---------------- */
+    if (req.files?.images?.length) {
+      const uploadedImages = await uploadFileToCloudinary(
+        req.files.images,
+        "activities/images"
+      );
+
+      data.images = uploadedImages.map((img, index) => ({
+        url: img.url,
+        public_id: img.public_id,
+        isMain: index === 0,
+      }));
+    }
+
+    /* ---------------- UPLOAD VIDEO ---------------- */
+    if (req.files?.video?.length) {
+      const [video] = await uploadFileToCloudinary(
+        req.files.video,
+        "activities/videos"
+      );
+
+      data.video = {
+        url: video.url,
+        public_id: video.public_id,
+      };
+    }
+
+    /* ---------------- SAVE ---------------- */
+    const activity = await Activity.create(data);
+
+    return res.status(201).json({
+      success: true,
+      message: "Activity created successfully",
+      data: activity,
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Create Activity Error:", error);
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

@@ -1,87 +1,95 @@
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
+import fs from "fs";
+
 dotenv.config();
 
-// Configure Cloudinary using environment variables
+/* ---------------- CLOUDINARY CONFIG ---------------- */
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Function to handle single or multiple file uploads
+/* ---------------- UPLOAD (DISK STORAGE SAFE) ---------------- */
 export const uploadFileToCloudinary = async (files, folderName = "default") => {
   try {
-    // Ensure files is always an array for uniform processing
     const fileArray = Array.isArray(files) ? files : [files];
-    console.log("the files inside are", fileArray)
-    // Map each file to the upload function
-    const uploadPromises = fileArray.map((file) =>
-      cloudinary.uploader.upload(file.path, {
-        folder: `fun_tours/${folderName}`, // Specify dynamic folder path
+
+    const uploadResults = await Promise.all(
+      fileArray.map(async (file) => {
+        if (!file?.path) {
+          throw new Error("File path missing. Are you using diskStorage?");
+        }
+
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: `fun_tours/${folderName}`,
+          resource_type: file.mimetype.startsWith("video") ? "video" : "image",
+        });
+
+        // 🔥 ALWAYS remove temp file after upload
+        fs.unlinkSync(file.path);
+
+        return {
+          url: result.secure_url,
+          public_id: result.public_id,
+          resource_type: result.resource_type,
+        };
       })
     );
 
-    // Wait for all promises (uploads) to complete
-    const uploadResults = await Promise.all(uploadPromises);
-
-    // Map and return only the necessary details from the upload results
-    return uploadResults.map((result) => ({
-      // [{}]-> for one file, [{},{}]=> for multiple file
-      secure_url: result.secure_url,
-      public_id: result.public_id,
-    }));
+    return uploadResults;
   } catch (error) {
-    throw new Error(`File upload failed: ${error.message}`);
+    throw new Error(`Cloudinary upload failed: ${error.message}`);
   }
 };
 
+/* ---------------- DELETE (IMAGE + VIDEO SAFE) ---------------- */
 export const deleteFileFromCloudinary = async (files) => {
-  const publicIds = Array.isArray(files)
-    ? files.map((file) => file.public_id) // Map public_id from the array
-    : [files.public_id]; // If single object, wrap public_id in an array
-
   try {
-    // Delete multiple files from Cloudinary using async/await
+    const fileArray = Array.isArray(files) ? files : [files];
+
     const deleteResults = await Promise.all(
-      publicIds.map(async (publicId) => {
-        try {
-          const result = await cloudinary.uploader.destroy(publicId);
-          console.log(
-            `File with public_id ${publicId} deleted from Cloudinary`
-          );
-          return { publicId, result }; // Return result for each file
-        } catch (error) {
-          console.error(
-            `Error deleting file with public_id: ${publicId}:`,
-            error
-          );
-          return { publicId, error: error.message || "Deletion failed" }; // Return error for each file
+      fileArray.map(async (file) => {
+        if (!file?.public_id) {
+          return {
+            success: false,
+            error: "public_id missing",
+          };
         }
+
+        const result = await cloudinary.uploader.destroy(file.public_id, {
+          resource_type: file.resource_type || "image",
+        });
+
+        return {
+          public_id: file.public_id,
+          result,
+        };
       })
     );
-    console.log("Deleted Result: ", deleteResults);
-    // Check if there were any errors
-    const failedDeletes = deleteResults.filter((res) => res.error); // response when deletion failed = {"result": "", "error": {}}
-    if (failedDeletes.length > 0) {
-      console.log("Failded deletes Response: ", failedDeletes);
+
+    const failed = deleteResults.filter((r) => r.result?.result !== "ok");
+
+    if (failed.length) {
       return {
         success: false,
         message: "Some files failed to delete",
-        failedDeletes,
+        failed,
       };
     }
 
-    
-    return { success: true, result: deleteResults };
+    return {
+      success: true,
+      deleted: deleteResults,
+    };
   } catch (error) {
-    console.error("Error during Cloudinary deletion process:", error);
     return {
       success: false,
-      message: "Error during Cloudinary deletion",
+      message: "Cloudinary deletion failed",
       error: error.message,
     };
   }
 };
 
-export default cloudinary
+export default cloudinary;

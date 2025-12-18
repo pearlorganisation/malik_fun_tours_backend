@@ -36,7 +36,7 @@ const BookingSchema = new mongoose.Schema(
     tax: { type: Number, default: 0 },
     totalAmount: Number,
 
-    paymentIntentId: String,
+    checkoutSessionId: String,
 
     status: {
       type: String,

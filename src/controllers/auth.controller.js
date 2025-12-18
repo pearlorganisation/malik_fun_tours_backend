@@ -1,15 +1,16 @@
-import OTP from "../../models/otp/otp.js";
-import User from "../../models/user/User.js";
-import ApiError from "../../utils/error/ApiError.js";
-import { asyncHandler } from "../../utils/error/asyncHandler.js";
+import OTP from "../models/Otp.js";
+import User from "../models/User.js";
+import ApiError from "../utils/error/ApiError.js";
+import { asyncHandler } from "../utils/error/asyncHandler.js";
 import {
   sendPasswordResetOTPOnMail,
   sendRegistrationOTPOnMail,
-} from "../../utils/mails/emailTemplate.js";
-import { generateOTP } from "../../utils/otpUtils.js";
-import { COOKIE_OPTIONS } from "../../../constants.js";
+} from "../utils/mails/emailTemplate.js";
+import { generateOTP } from "../utils/otpUtils.js";
+import { COOKIE_OPTIONS } from "../../constants.js";
 
 export const register = asyncHandler(async (req, res, next) => {
+  console.log("Register request body:", req.body); // Debug log
   const { email, name, phoneNumber, password } = req?.body;
 
   if (!email || !name || !phoneNumber || !password) {

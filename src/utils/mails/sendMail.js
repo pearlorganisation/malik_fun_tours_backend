@@ -2,9 +2,15 @@ import nodemailer from "nodemailer";
 import ejs from "ejs";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+dotenv.config();
+
+console.log("Nodemailer Email User:", process.env.NODEMAILER_EMAIL_USER);
+console.log("Nodemailer Email Pass:", process.env.NODEMAILER_EMAIL_PASS);
 
 // Define the sendMail function
 export const sendMail = async (to, subject, templateName, data) => {
+  console.log("data:", data);
   const __fileName = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__fileName);
   const templatePath = path.join(
