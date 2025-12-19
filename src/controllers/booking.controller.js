@@ -229,7 +229,7 @@ export const getMyBookings = async (req, res) => {
 
     // Fetch bookings with filters + pagination
     const bookings = await Booking.find(filter)
-      .populate("activity", "title coverImage duration location")
+      .populate("activity", "title images duration location")
       .sort({ createdAt: -1 }) // newest first
       .skip(skip)
       .limit(limit)
