@@ -166,8 +166,10 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
 
 
 export const resetPassword = asyncHandler(async (req, res, next) => {
-  const { email, newPassword, confirmNewPassword } = req.body;
-  if (!email || !newPassword || !confirmNewPassword) {
+  const { email, otp, newPassword, confirmNewPassword } = req.body;
+
+  //  Validate input
+  if (!email || !otp || !newPassword || !confirmNewPassword) {
     return next(new ApiError("All fields are required", 400));
   }
 
@@ -175,18 +177,42 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Passwords do not match", 400));
   }
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    return next(new ApiError("User not found!", 401));
+  //  Find OTP in DB
+  const otpRecord = await OTP.findOne({ email, type: "FORGOT_PASSWORD" });
+  if (!otpRecord) {
+    return next(new ApiError("Invalid or expired OTP", 400));
   }
 
-  user.password = newPassword;
+  //  Check OTP expiry (e.g., 10 minutes)
+  const otpAge = (Date.now() - otpRecord.createdAt.getTime()) / 1000 / 60; // minutes
+  if (otpAge > 5) {
+    await OTP.deleteOne({ _id: otpRecord._id });
+    return next(new ApiError("OTP expired. Please request a new one.", 400));
+  }
+
+  //  Verify OTP
+  if (otpRecord.otp !== otp) {
+    return next(new ApiError("Invalid OTP", 400));
+  }
+
+  //  Find user and update password
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  user.password = newPassword; 
   await user.save();
 
-  return res
-    .status(200)
-    .json({ success: true, message: "Password reset successfully." });
+  //  Delete OTP after successful reset
+  await OTP.deleteOne({ _id: otpRecord._id });
+
+  return res.status(200).json({
+    success: true,
+    message: "Password reset successfully.",
+  });
 });
+
 
 
 export const verifyOTP = asyncHandler(async (req, res, next) => {
