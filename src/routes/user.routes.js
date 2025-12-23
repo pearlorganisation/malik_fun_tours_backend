@@ -1,13 +1,8 @@
 import express from "express";
-import {  getMe } from "../controllers/user.controller.js";
-import { authenticateToken, verifyPermission } from "../middlewares/authMiddleware.js";
-import { USER_ROLES_ENUM } from "../../constants.js";
-
+import { getAllUsers } from "../controllers/user.controller.js";
 const userRouter = express.Router();
+import { checkRole } from "../middlewares/authMiddleware.js";
 
-userRouter.get("/me", authenticateToken, verifyPermission([USER_ROLES_ENUM.ADMIN,USER_ROLES_ENUM.USER]), getMe);
+userRouter.get("/", getAllUsers);
 
 export default userRouter;
-
-
-

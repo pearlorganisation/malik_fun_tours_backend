@@ -3,6 +3,8 @@ import {
   createBooking,
   confirmPayment,
   getMyBookings,
+  getAllBookings,
+  getBookingById,
 } from "../controllers/booking.controller.js";
 import { checkRole } from "../middlewares/authMiddleware.js";
 
@@ -11,5 +13,7 @@ const router = express.Router();
 router.post("/create",checkRole("USER"), createBooking);
 router.post("/confirm-payment",checkRole("USER"), confirmPayment);
 router.get("/my-bookings",checkRole("USER"), getMyBookings);
+router.get("/", getAllBookings);
+router.get("/:id", getBookingById);
 
 export default router;

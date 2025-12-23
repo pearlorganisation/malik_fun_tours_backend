@@ -14,9 +14,14 @@ export const register = asyncHandler(async (req, res, next) => {
   const { email, name, phoneNumber, password } = req?.body;
 
   if (!email || !name || !phoneNumber || !password) {
-    return next(new ApiError("All fields (name, email, phoneNumber, password) are required", 400));
+    return next(
+      new ApiError(
+        "All fields (name, email, phoneNumber, password) are required",
+        400
+      )
+    );
   }
- 
+
   const existingUser = await User.findOne({ email });
   const otp = generateOTP();
   try {
@@ -38,8 +43,6 @@ export const register = asyncHandler(async (req, res, next) => {
       });
     }
 
-
-
     // Create new user and send OTP
     await sendRegistrationOTPOnMail(email, { name, otp });
     await OTP.create({
@@ -57,7 +60,6 @@ export const register = asyncHandler(async (req, res, next) => {
     return next(new ApiError(`Failed to send OTP: ${error.message}`, 400));
   }
 });
-
 
 export const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req?.body;
@@ -111,7 +113,6 @@ export const login = asyncHandler(async (req, res, next) => {
     });
 });
 
-
 export const logout = asyncHandler(async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(
@@ -164,7 +165,6 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 export const resetPassword = asyncHandler(async (req, res, next) => {
   const { email, otp, newPassword, confirmNewPassword } = req.body;
 
@@ -201,7 +201,7 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
     return next(new ApiError("User not found", 404));
   }
 
-  user.password = newPassword; 
+  user.password = newPassword;
   await user.save();
 
   //  Delete OTP after successful reset
@@ -213,11 +213,9 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
   });
 });
 
-
-
 export const verifyOTP = asyncHandler(async (req, res, next) => {
   const { email, otp, type } = req?.body;
-  if (!email || !otp ) {
+  if (!email || !otp) {
     return next(new ApiError("Email , Otp, and type are required!", 400));
   }
   const otpDoc = await OTP.findOne({ email, otp, type });
@@ -304,4 +302,53 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
     console.log("ERROR Sending mail: ", error);
     return next(new ApiError(`Failed to send OTP: ${error.message}`, 400));
   }
+});
+
+export const getProfile = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select(
+    "-password -refresh_token"
+  );
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+  return res.status(200).json({
+    success: true,
+    message: "User profile fetched successfully",
+    user,
+  });
+});
+
+export const updateProfile = asyncHandler(async (req, res, next) => {
+  const { name, phoneNumber, email } = req.body;
+
+  // Validate input
+  if (!name || name.trim().length < 2) {
+    return next(new ApiError("Name must be at least 2 characters long", 400));
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id, // assuming you have auth middleware setting req.user
+    {
+      name: name.trim(),
+      phoneNumber: phoneNumber?.trim() || null,
+      email: email?.trim() || null,
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedUser) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  // Sanitize response
+  const sanitizedUser = updatedUser.toObject();
+  delete sanitizedUser.password;
+  delete sanitizedUser.refresh_token;
+  delete sanitizedUser.__v;
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    user: sanitizedUser,
+  });
 });

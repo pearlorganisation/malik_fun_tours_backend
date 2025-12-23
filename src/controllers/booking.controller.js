@@ -1,6 +1,6 @@
 import Activity from "../models/Activity.js";
 import Booking from "../models/Booking.js";
-import stripe from "../configs/stripe.js"
+import stripe from "../configs/stripe.js";
 import { calculateActivityPrice } from "../utils/calculateActivityPrice.js";
 
 export const createBooking = async (req, res) => {
@@ -85,8 +85,6 @@ export const createBooking = async (req, res) => {
   }
 };
 
-
-
 export const confirmPayment = async (req, res) => {
   try {
     const { bookingId } = req.body;
@@ -101,9 +99,9 @@ export const confirmPayment = async (req, res) => {
     }
 
     // 🔒 Ownership check
-    console.log(booking)
+    console.log(booking);
     console.log("Booking User ID:", booking.user.toString());
-    console.log("Request Use",req.user);
+    console.log("Request Use", req.user);
     if (!req.user || booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -261,3 +259,140 @@ export const getMyBookings = async (req, res) => {
   }
 };
 
+export const getAllBookings = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+
+    if (page < 1 || limit < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Page and limit must be positive integers.",
+      });
+    }
+
+    const status = req.query.status;
+    const search = req.query.search?.trim();
+
+    /** ---------------- BASE MATCH ---------------- */
+    const matchStage = {};
+    if (status && status !== "all") {
+      matchStage.status = status;
+    }
+
+    /** ---------------- PIPELINE ---------------- */
+    const pipeline = [
+      { $match: matchStage },
+
+      // 🔗 activity join
+      {
+        $lookup: {
+          from: "activities",
+          localField: "activity",
+          foreignField: "_id",
+          as: "activity",
+        },
+      },
+      { $unwind: "$activity" },
+
+      // 🔗 user join
+      {
+        $lookup: {
+          from: "users",
+          let: { userId: "$user" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$userId"] },
+              },
+            },
+            {
+              $project: {
+                password: 0,
+                refresh_token: 0,
+                __v: 0,
+              },
+            },
+          ],
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+    ];
+
+    /** ---------------- SEARCH ---------------- */
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "activity.title": { $regex: search, $options: "i" } },
+            { "user.name": { $regex: search, $options: "i" } },
+            { "user.email": { $regex: search, $options: "i" } },
+          ],
+        },
+      });
+    }
+
+    /** ---------------- SORT + PAGINATION ---------------- */
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          totalCount: [{ $count: "count" }],
+        },
+      }
+    );
+
+    const result = await Booking.aggregate(pipeline);
+
+    const bookings = result[0].data;
+    const totalBookings = result[0].totalCount[0]?.count || 0;
+    const totalPages = Math.ceil(totalBookings / limit);
+
+    res.status(200).json({
+      success: true,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalBookings,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+      bookings,
+    });
+  } catch (error) {
+    console.error("Error fetching all bookings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch all bookings",
+    });
+  }
+};
+
+export const getBookingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findById(id)
+      .populate("activity", "title images duration location")
+      .populate("user", "name email");
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      booking,
+    });
+  } catch (error) {
+    console.error("Error fetching booking by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch booking",
+    });
+  }
+};
