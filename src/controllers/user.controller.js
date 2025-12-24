@@ -7,22 +7,32 @@ export const getAllUsers = async (req, res) => {
 
     // Build filter object
     const filter = {};
-    if (name) filter.name = { $regex: name, $options: "i" }; // Case-insensitive partial match
-    if (email) filter.email = { $regex: email, $options: "i" };
-    if (role) filter.role = role;
 
-    // Convert page and limit to numbers with defaults
+    if (name && name.trim() !== "") {
+      filter.name = { $regex: name.trim(), $options: "i" };
+    }
+
+    if (email && email.trim() !== "") {
+      filter.email = { $regex: email.trim(), $options: "i" };
+    }
+
+   if (role && role.trim() !== "") {
+  filter.role = {
+    $regex: `^${role.trim()}$`,
+    $options: "i",
+  };
+}
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
     const skip = (pageNumber - 1) * limitNumber;
 
-    // Fetch users with pagination and filtering
+ // Fetch users with pagination and filtering
     const users = await User.find(filter)
       .select("-password -refresh_token")
       .skip(skip)
       .limit(limitNumber);
 
-    // Get total count for pagination metadata (optional but recommended)
+      // Get total count for pagination metadata (optional but recommended)
     const totalUsers = await User.countDocuments(filter);
 
     return res.status(200).json({
@@ -43,3 +53,4 @@ export const getAllUsers = async (req, res) => {
       .json({ message: "Server error while fetching users" });
   }
 };
+
