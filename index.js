@@ -12,6 +12,7 @@ import authRouter from "./src/routes/auth.routes.js";
 import userRouter from "./src/routes/user.routes.js";
 import activityRouter from "./src/routes/activity.routes.js";
 import bookingRouter from "./src/routes/booking.routes.js";
+import categoryRouter from "./src/routes/category.routes.js";
 configDotenv();
 
 const stripe_parser = bodyParser.raw({ type: "application/json" });
@@ -65,6 +66,7 @@ app.use(`/api/v1/activity`, activityRouter);
 app.use(`/api/v1/auth`, authRouter);
 app.use(`/api/v1/user`, userRouter);
 app.use(`/api/v1/bookings`, bookingRouter);
+app.use(`/api/v1/categories`, categoryRouter);
 
 app.use(errorHandler);
 
