@@ -60,7 +60,9 @@ const ActivitySchema = new mongoose.Schema(
     title: { type: String, required: true }, // e.g. "Evening Desert Safari"
     shortDescription: String,
     fullDescription: String,
-
+    category: { type: String, required: true }, // e.g. "Desert Safari", "City Tour"
+    location: String, // e.g. "Dubai Desert Conservation Reserve"
+    tags: [String], // e.g. ["family-friendly", "adventure", "cultural"]
     // ---------------- MAIN IMAGES (shared across variants) ----------------
     images: [ImageSchema],
     // Promotional video

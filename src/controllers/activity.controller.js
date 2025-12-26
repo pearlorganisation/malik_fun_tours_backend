@@ -6,9 +6,17 @@ import { parseJSON } from "../utils/parseJson.js";
 // GET all activities (with optional filters)
 export const getAllActivities = async (req, res) => {
   try {
-    const { page = 1, limit = 10, isActive } = req.query;
+    const { page = 1, limit = 10, isActive, category, location } = req.query;
     const filter =
       isActive !== undefined ? { isActive: isActive === "true" } : {};
+
+    if (category) {
+      filter.category = category;
+    }
+
+    if (location) {
+      filter.location = location;
+    }
 
     const activities = await Activity.find(filter)
       .limit(limit * 1)
@@ -51,7 +59,9 @@ export const createActivity = async (req, res) => {
       title: req.body.title,
       shortDescription: req.body.shortDescription,
       fullDescription: req.body.fullDescription,
-
+      category: req.body.category,
+      location: req.body.location,
+      tags: parseJSON(req.body.tags, []),
       duration: parseJSON(req.body.duration, {}),
       languages: parseJSON(req.body.languages, []),
       liveGuide: req.body.liveGuide === "true",
