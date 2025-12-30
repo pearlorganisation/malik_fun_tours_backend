@@ -6,16 +6,41 @@ import { parseJSON } from "../utils/parseJson.js";
 // GET all activities (with optional filters)
 export const getAllActivities = async (req, res) => {
   try {
-    const { page = 1, limit = 10, isActive, category, location } = req.query;
+    const { page = 1, limit = 10, isActive, category, categories ,location ,duration } = req.query;
     const filter =
       isActive !== undefined ? { isActive: isActive === "true" } : {};
 
-    if (category) {
+      if (categories) {
+      const categoryArray = Array.isArray(categories)
+        ? categories
+        : categories.split(",");
+
+      filter.category = { $in: categoryArray };
+    } 
+    else if (category) {
       filter.category = category;
     }
 
     if (location) {
       filter.location = location;
+    }
+
+      if (duration) {
+      if (duration === "0-1") {
+        filter["duration.hours"] = { $lte: 1 };
+      }
+
+      if (duration === "1-4") {
+        filter["duration.hours"] = { $gte: 1, $lte: 4 };
+      }
+
+      if (duration === "4-24") {
+        filter["duration.hours"] = { $gte: 4, $lte: 24 };
+      }
+
+      if (duration === "24+") {
+        filter["duration.hours"] = { $gt: 24 };
+      }
     }
 
     const activities = await Activity.find(filter)
