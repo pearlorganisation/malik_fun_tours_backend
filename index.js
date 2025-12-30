@@ -13,6 +13,8 @@ import userRouter from "./src/routes/user.routes.js";
 import activityRouter from "./src/routes/activity.routes.js";
 import bookingRouter from "./src/routes/booking.routes.js";
 import categoryRouter from "./src/routes/category.routes.js";
+import spotRouter from "./src/routes/spot.routes.js";
+import placeRouter from "./src/routes/place.routes.js";
 configDotenv();
 
 const stripe_parser = bodyParser.raw({ type: "application/json" });
@@ -43,12 +45,13 @@ app.use(
   })
 );
 
+
+app.use(express.json({ limit: "10mb" }));
 app.use(
   express.urlencoded({
-    extended: true,
+    extended: false,
   })
 );
-app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 app.set("view engine", "ejs");
@@ -67,6 +70,8 @@ app.use(`/api/v1/auth`, authRouter);
 app.use(`/api/v1/user`, userRouter);
 app.use(`/api/v1/bookings`, bookingRouter);
 app.use(`/api/v1/categories`, categoryRouter);
+app.use(`/api/v1/spots`, spotRouter);
+app.use(`/api/v1/places`, placeRouter);
 
 app.use(errorHandler);
 
