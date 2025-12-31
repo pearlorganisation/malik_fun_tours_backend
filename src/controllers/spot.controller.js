@@ -6,7 +6,7 @@ import {
 
 /* ================= CREATE SPOT ================= */
 export const createSpot = async (req, res) => {
-  console.log("hiiii")
+
   try {
     const {
       title,
@@ -50,19 +50,53 @@ export const createSpot = async (req, res) => {
 /* ================= GET ALL SPOTS ================= */
 export const getAllSpots = async (req, res) => {
   try {
-    const spots = await Spot.find()
+    // Query params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const category = req.query.category;
+    const search = req.query.search; // 🔍 title search
+
+    const skip = (page - 1) * limit;
+
+    // Build filter
+    const filter = {};
+
+    if (category) {
+      filter.category = category;
+    }
+
+    if (search) {
+      filter.title = { $regex: search, $options: "i" }; // case-insensitive
+    }
+
+    // Fetch spots
+    const spots = await Spot.find(filter)
       .populate("whereToStay")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Total count for pagination
+    const total = await Spot.countDocuments(filter);
 
     res.json({
       success: true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
       count: spots.length,
       data: spots,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
+
 
 /* ================= GET SINGLE SPOT ================= */
 export const getSpotById = async (req, res) => {
