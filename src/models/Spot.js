@@ -82,4 +82,8 @@ const spotSchema = new mongoose.Schema(
   }
 );
 
+// Spot schema
+spotSchema.index({ title: "text" });
+
+
 export default mongoose.model("Spot", spotSchema);
