@@ -2,22 +2,28 @@ import Activity from "../models/Activity.js";
 import { uploadFileToCloudinary } from "../configs/cloudinary.js";
 import { parseJSON } from "../utils/parseJson.js";
 
-
 // GET all activities (with optional filters)
 export const getAllActivities = async (req, res) => {
   try {
-    const { page = 1, limit = 10, isActive, category, categories ,location ,duration } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      isActive,
+      category,
+      categories,
+      location,
+      duration,
+    } = req.query;
     const filter =
       isActive !== undefined ? { isActive: isActive === "true" } : {};
 
-      if (categories) {
+    if (categories) {
       const categoryArray = Array.isArray(categories)
         ? categories
         : categories.split(",");
 
       filter.category = { $in: categoryArray };
-    } 
-    else if (category) {
+    } else if (category) {
       filter.category = category;
     }
 
@@ -25,7 +31,7 @@ export const getAllActivities = async (req, res) => {
       filter.location = location;
     }
 
-      if (duration) {
+    if (duration) {
       if (duration === "0-1") {
         filter["duration.hours"] = { $lte: 1 };
       }
@@ -60,6 +66,60 @@ export const getAllActivities = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET populaer acitivies
+export const getPopularActivities = async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+
+    const activities = await Activity.aggregate([
+      {
+        $match: {
+          isActive: true,
+          reviewCount: { $gt: 0 },
+        },
+      },
+      {
+        $addFields: {
+          popularityScore: {
+            $add: [
+              { $multiply: ["$rating", 0.7] },
+              {
+                $multiply: [{ $ln: { $add: ["$reviewCount", 1] } }, 0.3],
+              },
+            ],
+          },
+        },
+      },
+      { $sort: { popularityScore: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          title: 1,
+          shortDescription: 1,
+          category: 1,
+          location: 1,
+          images: 1,
+          rating: 1,
+          reviewCount: 1,
+          popularityScore: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      activities,
+    });
+  } catch (error) {
+    console.error("Popular Activities Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch popular activities",
+    });
+  }
+};
+
 
 // GET single activity by ID
 export const getActivityById = async (req, res) => {

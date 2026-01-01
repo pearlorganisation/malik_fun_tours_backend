@@ -128,4 +128,6 @@ const ActivitySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+ActivitySchema.index({ reviewCount: -1, rating: -1 });
+
 export default mongoose.model("Activity", ActivitySchema);
