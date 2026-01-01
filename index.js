@@ -15,6 +15,7 @@ import bookingRouter from "./src/routes/booking.routes.js";
 import categoryRouter from "./src/routes/category.routes.js";
 import spotRouter from "./src/routes/spot.routes.js";
 import placeRouter from "./src/routes/place.routes.js";
+import reviewRouter from "./src/routes/review.routes.js";
 configDotenv();
 
 const stripe_parser = bodyParser.raw({ type: "application/json" });
@@ -72,6 +73,7 @@ app.use(`/api/v1/bookings`, bookingRouter);
 app.use(`/api/v1/categories`, categoryRouter);
 app.use(`/api/v1/spots`, spotRouter);
 app.use(`/api/v1/places`, placeRouter);
+app.use(`/api/v1/reviews`, reviewRouter);
 
 app.use(errorHandler);
 
