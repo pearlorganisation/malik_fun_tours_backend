@@ -2,6 +2,7 @@ export const DB_NAME = "fun_tours";
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,
+  secure : true,
   sameSite: "None", // allow OAuth redirect
   secure: process.env.NODE_ENV === "production",
 };
