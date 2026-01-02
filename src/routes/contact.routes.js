@@ -11,6 +11,7 @@ router.route('/')
     .get(getAllQueries)
     .post(createQuery);
 
+// Update the status of a specific query by ID    
 router.patch('/status/:id/', updateQueryStatus);    
 
 
