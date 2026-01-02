@@ -120,6 +120,93 @@ export const getPopularActivities = async (req, res) => {
   }
 };
 
+// Get popular locations
+export const getPopularLocations = async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+
+    const locations = await Activity.aggregate([
+      {
+        $match: {
+          isActive: true,
+          location: { $exists: true, $ne: "" },
+          reviewCount: { $gt: 0 },
+        },
+      },
+
+      // Group activities by location
+      {
+        $group: {
+          _id: "$location",
+
+          totalActivities: { $sum: 1 },
+          totalReviews: { $sum: "$reviewCount" },
+          avgRating: { $avg: "$rating" },
+
+          // Pick one main image from activities
+          image: {
+            $first: {
+              $arrayElemAt: [
+                {
+                  $filter: {
+                    input: "$images",
+                    as: "img",
+                    cond: { $eq: ["$$img.isMain", true] },
+                  },
+                },
+                0,
+              ],
+            },
+          },
+        },
+      },
+
+      // Calculate popularity score
+      {
+        $addFields: {
+          popularityScore: {
+            $add: [
+              { $multiply: ["$avgRating", 0.7] },
+              {
+                $multiply: [{ $ln: { $add: ["$totalReviews", 1] } }, 0.3],
+              },
+            ],
+          },
+        },
+      },
+
+      // Sort by popularity
+      { $sort: { popularityScore: -1 } },
+
+      // Limit results
+      { $limit: limit },
+
+      // Final shape
+      {
+        $project: {
+          _id: 0,
+          location: "$_id",
+          totalActivities: 1,
+          totalReviews: 1,
+          avgRating: { $round: ["$avgRating", 1] },
+          popularityScore: { $round: ["$popularityScore", 2] },
+          image: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      locations,
+    });
+  } catch (error) {
+    console.error("Popular Locations Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch popular locations",
+    });
+  }
+};
 
 // GET single activity by ID
 export const getActivityById = async (req, res) => {
