@@ -219,6 +219,20 @@ export const getActivityById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// GET activities by category
+export const getActivitiesByCategory = async (req, res) => {
+  try {
+    const activities = await Activity.find({ category: req.params.category });
+    if (activities.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No activities found in this category" });
+    }
+    res.json(activities);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 // CREATE new activity
 export const createActivity = async (req, res) => {
