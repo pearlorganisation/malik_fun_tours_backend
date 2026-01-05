@@ -8,6 +8,7 @@ import {
   toggleActive,
   getPopularActivities,
   getPopularLocations,
+  getActivitiesByCategory,
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
 const router = express.Router();
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get("/", getAllActivities); // GET /api/admin/activities
 router.get("/popular",getPopularActivities);
 router.get("/popular-locations",getPopularLocations);
+router.get("/category/:category", getActivitiesByCategory); // GET /api/admin/activities/:id
 router.get("/:id", getActivityById); // GET /api/admin/activities/:id
 router.post(
   "/",
