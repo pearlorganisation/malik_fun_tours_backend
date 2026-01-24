@@ -40,6 +40,7 @@ app.use(
             "http://localhost:3001",
             "https://malik-frontend-jhf8.vercel.app",
             "https://malik-admin-panel.vercel.app",
+            "https://malik-frontend-jshg.vercel.app"
           ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Specify allowed HTTP methods
     allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
