@@ -11,7 +11,6 @@ const ActivitySchema = new mongoose.Schema(
 
     slug: {
       type: String,
-      required: true,
       unique: true,
       lowercase: true,
       index: true,
@@ -21,12 +20,21 @@ const ActivitySchema = new mongoose.Schema(
       ref: "Category",
       required: true,
     },
+    placeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Place",
+      required: true,
+    },
     Images: [
       {
         secure_url: String,
-        publicId: String,
+        public_id: String,
       },
     ],
+    Video: {
+      secure_url: String,
+      public_id: String,
+    },
     /* ---------- EXPERIENCE ---------- */
     Experience: {
       title: {
@@ -143,5 +151,6 @@ ActivitySchema.virtual("packages", {
 ActivitySchema.set("toJSON", { virtuals: true });
 ActivitySchema.set("toObject", { virtuals: true });
 
+const Activity =mongoose.model("Activity_Malik", ActivitySchema);
 
-export default mongoose.model("Activity", ActivitySchema);
+export default Activity;

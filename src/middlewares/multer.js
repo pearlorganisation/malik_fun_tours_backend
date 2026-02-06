@@ -12,21 +12,24 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-/* ---------------- DISK STORAGE ---------------- */
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOAD_DIR);
-  },
+// /* ---------------- DISK STORAGE ---------------- */
+// // const storage = multer.diskStorage({
+// //   destination: (req, file, cb) => {
+// //     cb(null, UPLOAD_DIR);
+// //   },
 
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const baseName = path.basename(file.originalname, ext);
+// //   filename: (req, file, cb) => {
+// //     const ext = path.extname(file.originalname);
+// //     const baseName = path.basename(file.originalname, ext);
 
-    const safeName = baseName.toLowerCase().replace(/[^a-z0-9]/g, "-");
+// //     const safeName = baseName.toLowerCase().replace(/[^a-z0-9]/g, "-");
 
-    cb(null, `${safeName}-${Date.now()}${ext}`);
-  },
-});
+// //     cb(null, `${safeName}-${Date.now()}${ext}`);
+// //   },
+// // });
+
+///* ---------------- MEMORY STORAGE ---------------- */
+const storage = multer.memoryStorage();
 
 /* ---------------- MULTER CONFIG ---------------- */
 export const upload = multer({

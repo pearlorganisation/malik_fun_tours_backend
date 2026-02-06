@@ -12,6 +12,7 @@ const PackageSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
     whatInclude: [String],
     whatExclude: [String],
     /* ---------- STATUS ---------- */
@@ -26,4 +27,5 @@ const PackageSchema = new mongoose.Schema(
   }
 );
 
-export default Package = mongoose.model("Package",PackageSchema);
+const  Package = mongoose.model("Package",PackageSchema);
+export default Package;
