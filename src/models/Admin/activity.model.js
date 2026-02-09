@@ -81,6 +81,9 @@ const ActivitySchema = new mongoose.Schema(
         description: {
           type: String,
         },
+        note:{
+          type:String,
+        },
         mapLink: {
           type: String,
         },
@@ -142,6 +145,11 @@ const ActivitySchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+ActivitySchema.index({ name: "text" });
+ActivitySchema.index({ categoryId: 1 });
+ActivitySchema.index({ placeId: 1 });
+  
 
 ActivitySchema.virtual("packages", {
   ref: "Package", // model name

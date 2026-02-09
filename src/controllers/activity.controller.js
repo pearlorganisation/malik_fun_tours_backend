@@ -401,7 +401,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
   /* ---------- UPLOAD IMAGES ---------- */
 
   let Images = [];
-  Video = {};
+  let Video = {};
 
   if (req.files?.images?.length) {
     const uploaded = await uploadFileToCloudinary(

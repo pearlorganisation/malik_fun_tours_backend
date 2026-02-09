@@ -2,16 +2,27 @@ import express from "express";
 import {
   // getAllActivities,
   // getActivityById,
-  createActivity,
   // updateActivity,
   // deleteActivity,
   // toggleActive,
   // getPopularActivities,
   // getPopularLocations,
   // getActivitiesByCategory,
+  createActivity,
+  updateActivity,
+  getActivityById,
+  toggleActivityStatusById,
+  getAllActivity,
+  createPackage,
+  updatePackage,
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
-import { activityValidator } from "../middlewares/validators/activityValidator.js";
+import {
+  activityValidator,
+  updateActivityValidator,
+  createPackageValidator,
+  updatePackageValidator,
+} from "../middlewares/validators/activityValidator.js";
 import { validateRequest } from "../middlewares/validateRequest.js";
 const router = express.Router();
 
@@ -21,7 +32,7 @@ const router = express.Router();
 // router.get("/category/:category", getActivitiesByCategory); // GET /api/admin/activities/:id
 // router.get("/:id", getActivityById); // GET /api/admin/activities/:id
 router.post(
-  "/",
+  "/create",
   upload.fields([
     { name: "images", maxCount: 10 },
     { name: "video", maxCount: 1 },
@@ -31,11 +42,35 @@ router.post(
   createActivity
 );
 
+router.put(
+  "/update/:id",
+  upload.fields([
+    { name: "images", maxCount: 10 },
+    { name: "video", maxCount: 1 },
+  ]),
+  updateActivityValidator,
+  validateRequest,
+  updateActivity
+);
+
+router.patch("/toggle/:id", toggleActivityStatusById);
+router.get("get-activity/:id", getActivityById);
+router.get("/search", getAllActivity);
+
+router.post(
+  "/create-package",
+  createPackageValidator,
+  validateRequest,
+  createPackage
+);
+router.post(
+  "/update-package/:id",
+  updatePackageValidator,
+  validateRequest,
+  updatePackage
+);
 
 // router.post("/", createPackageValidator, validateRequest, createPackage);
-
-
-
 
 // POST /api/admin/activities
 // router.put("/:id", updateActivity); // PUT /api/admin/activities/:id

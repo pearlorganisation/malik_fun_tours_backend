@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 export const activityValidator = [
   /* ---------- BASIC FIELDS ---------- */
-
+ 
   body("name")
     .notEmpty()
     .withMessage("Activity name is required")
@@ -28,6 +28,7 @@ export const activityValidator = [
     .notEmpty()
     .withMessage("Experience object is required")
     .custom((value) => {
+      console.log("hlo",typeof value);
       const exp = JSON.parse(value);
 
       if (!exp.title) throw new Error("Experience.title is required");
