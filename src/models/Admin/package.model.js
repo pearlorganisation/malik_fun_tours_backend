@@ -1,5 +1,29 @@
 import mongoose from "mongoose";
 
+const BookingFieldSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true, // e.g. "Adults", "Children", "Duration"
+    },
+
+    unit: {
+      type:String,
+      required:true,
+      enum:["minute","quantity"]
+    } ,
+
+    min: Number, // minimum allowed value
+    max: Number, // maximum allowed value
+
+    price: {
+      type: Number,
+      required: true, // price per unit/adult/hour
+    },
+
+  },
+  { _id: false }
+);
 const PackageSchema = new mongoose.Schema(
   {
     activityId: {
@@ -8,6 +32,7 @@ const PackageSchema = new mongoose.Schema(
       required: true,
     },
     name: { type: String, required: true },
+    description: String,
     price: {
       type: Number,
       required: true,
@@ -20,6 +45,7 @@ const PackageSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    bookingFields: [BookingFieldSchema],
   },
 
   {
