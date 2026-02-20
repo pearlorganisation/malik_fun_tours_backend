@@ -26,7 +26,7 @@ import {
 import { validateRequest } from "../middlewares/validateRequest.js";
 const router = express.Router();
 
-// router.get("/", getAllActivities); // GET /api/admin/activities
+ //router.get("/", getAllActivities); // GET /api/admin/activities
 // router.get("/popular",getPopularActivities);
 // router.get("/popular-locations",getPopularLocations);
 // router.get("/category/:category", getActivitiesByCategory); // GET /api/admin/activities/:id
