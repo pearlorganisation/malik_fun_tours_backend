@@ -5,10 +5,10 @@ import {
 
 import mongoose from "mongoose";
 import slugify from "slugify";
-import Activity from "../models/Admin/activity.model.js"
+import Activity from "../models/Admin/activity.model.js";
 import Package from "../models/Admin/package.model.js";
-import Place from "../models/Place.js"
-import {Category} from "../models/Category.js";
+import Place from "../models/Place.js";
+import { Category } from "../models/Category.js";
 import { asyncHandler } from "../utils/error/asyncHandler.js";
 import ApiError from "../utils/error/ApiError.js";
 import successResponse from "../utils/error/successResponse.js";
@@ -377,6 +377,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
     InfoAndLogistics,
     BBQ_BUFFET,
     PrivateSUV,
+    timeSlots
   } = req.body;
 
   /* ---------- PARSE JSON SAFELY ---------- */
@@ -393,6 +394,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
       BBQ_BUFFET: BBQ_BUFFET ? JSON.parse(BBQ_BUFFET) : null,
       PrivateSUV: PrivateSUV ? JSON.parse(PrivateSUV) : null,
+      timeSlots: timeSlots? JSON.parse(timeSlots):null,
     };
   } catch (error) {
     return next(new ApiError("Invalid JSON format in request body", 400));
@@ -453,15 +455,13 @@ export const createActivity = asyncHandler(async (req, res, next) => {
 export const updateActivity = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-
-    if (!id) {
-      return next(new ApiError("activity id required", 400));
-    }
-    /* ---------- VALIDATE OBJECT ID ---------- */
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return next(new ApiError("INVALID API ID", 400));
-    }
-
+  if (!id) {
+    return next(new ApiError("activity id required", 400));
+  }
+  /* ---------- VALIDATE OBJECT ID ---------- */
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ApiError("INVALID API ID", 400));
+  }
 
   /* ---------- FIND ACTIVITY ---------- */
   const activity = await Activity.findById(id);
@@ -496,7 +496,7 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
     activity.InfoAndLogistics = parseField("InfoAndLogistics");
   if (req.body.BBQ_BUFFET) activity.BBQ_BUFFET = parseField("BBQ_BUFFET");
   if (req.body.PrivateSUV) activity.PrivateSUV = parseField("PrivateSUV");
-
+  if(req.body.timeSlots) activity.timeSlots =parseField("timeSlots");
   /* ======================================================
       REMOVE IMAGES
   ====================================================== */
@@ -570,7 +570,6 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
   return successResponse(res, 200, "Activity updated successfully", activity);
 });
 
-
 export const toggleActivityStatusById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
@@ -579,7 +578,7 @@ export const toggleActivityStatusById = asyncHandler(async (req, res, next) => {
   }
   /* ---------- VALIDATE OBJECT ID ---------- */
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next (new ApiError("INVALID API ID",400));
+    return next(new ApiError("INVALID API ID", 400));
   }
 
   // Use an aggregation pipeline with $set and $not to toggle the current value
@@ -601,24 +600,22 @@ export const toggleActivityStatusById = asyncHandler(async (req, res, next) => {
   );
 });
 
-
 export const getActivityById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-   if (!id) {
+  if (!id) {
     return next(new ApiError("activity id required", 400));
   }
   /* ---------- VALIDATE OBJECT ID ---------- */
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next (new ApiError("INVALID API ID",400));
+    return next(new ApiError("INVALID API ID", 400));
   }
 
   /* ---------- FIND ACTIVITY + VIRTUAL PACKAGES ---------- */
-  const activity = await Activity.findById(id)
-    .populate({
-      path: "packages",
-      options: { sort: { price: 1 } },
-    });
+  const activity = await Activity.findById(id).populate({
+    path: "packages",
+    options: { sort: { price: 1 } },
+  });
 
   if (!activity) {
     return res.status(404).json({
@@ -627,8 +624,7 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
     });
   }
 
-  return successResponse(res,200,"Activity found ",activity);
-
+  return successResponse(res, 200, "Activity found ", activity);
 });
 
 export const getAllActivity = asyncHandler(async (req, res, next) => {
@@ -726,44 +722,63 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
    PACKAGE CONTROLLERS
 ====================================================== */
 
-export const createPackage = asyncHandler(async (req, res) => {
-  const { activityId, name, price, whatInclude, whatExclude } = req.body;
+export const createPackage = asyncHandler(async (req, res, next) => {
+  const {
+    activityId,
+    name,
+    price,
+    description,
+    whatInclude,
+    whatExclude,
+    bookingFields,
+  } = req.body;
 
   const activity = await Activity.findById(activityId);
   if (!activity) {
-    return next(new ApiError("Activity not found",400));
+    return next(new ApiError("Activity not found", 400));
   }
 
   const pkg = await Package.create({
     activityId,
     name,
+    description,
     price,
     whatInclude,
     whatExclude,
+    bookingFields: bookingFields || [],
   });
 
-  return successResponse(res, 200, "Package created successfully",pkg);
+  return successResponse(res, 200, "Package created successfully", pkg);
 });
-
-
 
 export const updatePackage = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const {  name, price, whatInclude, whatExclude, isActive } =
-    req.body;
 
-  /* ---------- CHECK PACKAGE EXISTS ---------- */
-  const pkg = await Package.findOne(id);
+  const {
+    name,
+    price,
+    description,
+    whatInclude,
+    whatExclude,
+    isActive,
+    bookingFields,
+  } = req.body;
+
+  const pkg = await Package.findById(id);
   if (!pkg) {
     return next(new ApiError("Package not found", 404));
   }
 
-  /* ---------- UPDATE FIELDS (PARTIAL) ---------- */
   if (name !== undefined) pkg.name = name;
   if (price !== undefined) pkg.price = price;
+  if (description !== undefined) pkg.description = description;
   if (whatInclude !== undefined) pkg.whatInclude = whatInclude;
   if (whatExclude !== undefined) pkg.whatExclude = whatExclude;
   if (isActive !== undefined) pkg.isActive = isActive;
+
+  if (bookingFields !== undefined) {
+    pkg.bookingFields = bookingFields;
+  }
 
   await pkg.save();
 
