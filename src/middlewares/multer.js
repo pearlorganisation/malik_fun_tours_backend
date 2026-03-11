@@ -28,6 +28,9 @@ const storage = multer.diskStorage({
   },
 });
 
+///* ---------------- MEMORY STORAGE ---------------- */
+// const storage = multer.memoryStorage();
+
 /* ---------------- MULTER CONFIG ---------------- */
 export const upload = multer({
   storage,
