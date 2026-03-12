@@ -609,9 +609,9 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
     return next(new ApiError("activity id required", 400));
   }
   /* ---------- VALIDATE OBJECT ID ---------- */
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next (new ApiError("INVALID API ID",400));
-  }
+  // if (!mongoose.Types.ObjectId.isValid(id)) {
+  //   return next (new ApiError("INVALID API ID",400));
+  // }
 
   /* ---------- FIND ACTIVITY + VIRTUAL PACKAGES ---------- */
   const activity = await Activity.findById(id)
@@ -726,26 +726,65 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
    PACKAGE CONTROLLERS
 ====================================================== */
 
-export const createPackage = asyncHandler(async (req, res) => {
-  const { activityId, name, price, whatInclude, whatExclude } = req.body;
+// export const createPackage = asyncHandler(async (req, res) => {
+//   const { activityId, name, price, whatInclude, whatExclude } = req.body;
 
-  const activity = await Activity.findById(activityId);
-  if (!activity) {
-    return next(new ApiError("Activity not found",400));
-  }
+//   const activity = await Activity.findById(activityId);
+//   if (!activity) {
+//     return next(new ApiError("Activity not found",400));
+//   }
 
-  const pkg = await Package.create({
+//   const pkg = await Package.create({
+//     activityId,
+//     name,
+//     price,
+//     whatInclude,
+//     whatExclude,
+//   });
+
+//   return successResponse(res, 200, "Package created successfully",pkg);
+// });
+
+
+
+export const createPackage = asyncHandler(async (req, res, next) => {
+  const {
     activityId,
     name,
+    description,
     price,
+    whatInclude = [],
+    whatExclude = [],
+    bookingFields = [],
+    isActive = true,
+  } = req.body;
+  if (!activityId || !name || price === undefined) {
+    return next(new ApiError("activityId, name and price are required", 400));
+  }
+  const activityExists = await Activity.exists({ _id: activityId });
+
+  if (!activityExists) {
+    return next(new ApiError("Activity not found", 404));
+  }
+  const sanitizedBookingFields = bookingFields.map((field) => ({
+    name: field.name?.trim(),
+    unit: field.unit || "quantity",
+    min: Number(field.min) || 0,
+    max: Number(field.max) || 0,
+    price: Number(field.price) || 0,
+  }));
+  const pkg = await Package.create({
+    activityId,
+    name: name.trim(),
+    description: description?.trim() || "",
+    price: Number(price),
     whatInclude,
     whatExclude,
+    bookingFields: sanitizedBookingFields,
+    isActive,
   });
-
-  return successResponse(res, 200, "Package created successfully",pkg);
+  return successResponse(res, 201, "Package created successfully", pkg);
 });
-
-
 
 export const updatePackage = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
@@ -768,4 +807,40 @@ export const updatePackage = asyncHandler(async (req, res, next) => {
   await pkg.save();
 
   return successResponse(res, 200, "Package updated successfully", pkg);
+});
+
+export const getAllPackages = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 50 } = req.query;
+
+  const packages = await Package.find()
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(Number(limit))
+    .lean();
+
+  return successResponse(res, 200, "Packages fetched successfully", packages);
+});
+export const getPackagesByActivity = asyncHandler(async (req, res, next) => {
+  const { activityId } = req.params;
+
+  const packages = await Package.find({
+    activityId,
+    isActive: true,
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return successResponse(res, 200, "Packages fetched successfully", packages);
+});
+
+export const getPackageById = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const pkg = await Package.findById(id).lean();
+
+  if (!pkg) {
+    return next(new ApiError("Package not found", 404));
+  }
+
+  return successResponse(res, 200, "Package fetched successfully", pkg);
 });
