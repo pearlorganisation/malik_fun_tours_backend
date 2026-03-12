@@ -66,7 +66,7 @@ router.post(
   validateRequest,
   createPackage
 );
-router.post(
+router.put(
   "/update-package/:id",
   updatePackageValidator,
   validateRequest,

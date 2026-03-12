@@ -7,21 +7,25 @@ const BookingFieldSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
     unit: {
       type: String,
       enum: ["minute", "quantity"],
       default: "quantity",
     },
+
     min: {
       type: Number,
       default: 0,
       min: 0,
     },
+
     max: {
       type: Number,
       default: 0,
       min: 0,
     },
+
     price: {
       type: Number,
       default: 0,
@@ -67,6 +71,13 @@ const PackageSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+
+    addons: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Addon",
+      },
+    ],
 
     bookingFields: {
       type: [BookingFieldSchema],
