@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const ActivitySchema = new mongoose.Schema(
   {
-    /* ---------- BASIC INFO ---------- */
+        /* ---------- BASIC INFO ---------- */
     name: {
       type: String,
       required: true,
@@ -145,12 +145,18 @@ const ActivitySchema = new mongoose.Schema(
         type: String,
         default: "SUV",
       },
+       seat :{
+      type : Number,
+      default : 0
+      
+    },
     },
     /* ---------- STATUS ---------- */
     isActive: {
       type: Boolean,
       default: true,
     },
+   
   },
   {
     timestamps: true,
