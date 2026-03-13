@@ -66,6 +66,13 @@ const PackageSchema = new mongoose.Schema(
       required: true,
     },
 
+    addons:[
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Addon",
+      }
+    ],
+
     whatInclude: [String],
     whatExclude: [String],
     /* ---------- STATUS ---------- */

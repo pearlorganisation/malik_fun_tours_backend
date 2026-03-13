@@ -12,6 +12,7 @@ import { Category } from "../models/Category.js";
 import { asyncHandler } from "../utils/error/asyncHandler.js";
 import ApiError from "../utils/error/ApiError.js";
 import successResponse from "../utils/error/successResponse.js";
+import addonsModel from "../models/Admin/addons.model.js";
 // // GET all activities (with optional filters)
 // export const getAllActivities = async (req, res) => {
 //   try {
@@ -731,11 +732,27 @@ export const createPackage = asyncHandler(async (req, res, next) => {
     whatInclude,
     whatExclude,
     bookingFields,
+    addons
   } = req.body;
 
   const activity = await Activity.findById(activityId);
   if (!activity) {
     return next(new ApiError("Activity not found", 400));
+  }
+  if (addons && addons.length) {
+    const uniqueAddons = new Set(addons);
+
+    if (uniqueAddons.size !== addons.length) {
+      return next(new ApiError("Duplicate addon ids are not allowed", 400));
+    }
+
+    const addonCount = await addonsModel.countDocuments({
+      _id: { $in: addons },
+    });
+
+    if (addonCount !== addons.length) {
+      return next(new ApiError("One or more addons are invalid", 400));
+    }
   }
 
   const pkg = await Package.create({
@@ -746,6 +763,7 @@ export const createPackage = asyncHandler(async (req, res, next) => {
     whatInclude,
     whatExclude,
     bookingFields: bookingFields || [],
+    addons: addons || [],
   });
 
   return successResponse(res, 200, "Package created successfully", pkg);
@@ -762,6 +780,7 @@ export const updatePackage = asyncHandler(async (req, res, next) => {
     whatExclude,
     isActive,
     bookingFields,
+    addons
   } = req.body;
 
   const pkg = await Package.findById(id);
@@ -779,6 +798,23 @@ export const updatePackage = asyncHandler(async (req, res, next) => {
   if (bookingFields !== undefined) {
     pkg.bookingFields = bookingFields;
   }
+   if (addons!==undefined && addons.length) {
+     const uniqueAddons = new Set(addons);
+
+     if (uniqueAddons.size !== addons.length) {
+       return next(new ApiError("Duplicate addon ids are not allowed", 400));
+     }
+
+     const addonCount = await addonsModel.countDocuments({
+       _id: { $in: addons },
+     });
+
+     if (addonCount !== addons.length) {
+       return next(new ApiError("One or more addons are invalid", 400));
+     }
+       pkg.addons = addons;
+   }
+   
 
   await pkg.save();
 

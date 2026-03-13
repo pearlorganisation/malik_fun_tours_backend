@@ -256,7 +256,6 @@ export const updateActivityValidator = [
     }),
 ];
 
-
 export const createPackageValidator = [
   body("activityId")
     .notEmpty()
@@ -293,6 +292,14 @@ export const createPackageValidator = [
     .optional()
     .isArray()
     .withMessage("whatExclude must be an array of strings"),
+  /* ---------- ADDONS ---------- */
+
+  body("addons").optional().isArray().withMessage("addons must be an array"),
+
+  body("addons.*")
+    .optional()
+    .custom((value) => mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid addon id"),
 
   /* ---------- BOOKING FIELDS VALIDATION ---------- */
 
@@ -365,6 +372,13 @@ export const updatePackageValidator = [
     .optional()
     .isBoolean()
     .withMessage("isActive must be boolean"),
+
+  body("addons").optional().isArray().withMessage("addons must be an array"),
+
+  body("addons.*")
+    .optional()
+    .custom((value) => mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid addon id"),
 
   /* ---------- BOOKING FIELDS ---------- */
 
