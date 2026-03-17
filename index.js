@@ -34,6 +34,7 @@ app.use(
             "http://localhost:3001",
             "https://malik-frontend-jshg.vercel.app",
             "https://malik-admin-panel.vercel.app",
+            "https://malik-frontend-jshg-g9vcl51tw-pearlorganisations-projects.vercel.app/"
           ]
         : [
             "http://localhost:3000",
