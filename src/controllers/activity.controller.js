@@ -133,16 +133,47 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
   }
 
   /* ---------- PARSE JSON FIELDS ---------- */
-  const parseField = (field) =>
-    req.body[field] ? JSON.parse(req.body[field]) : null;
+  // const parseField = (field) =>
+  //   req.body[field] ? JSON.parse(req.body[field]) : null;
+//   const parseField = (field) => {
+//   try {
+//     return req.body[field] ? JSON.parse(req.body[field]) : null;
+//   } catch (err) {
+//     throw new ApiError(`${field} must be valid JSON`, 400);
+//   }
+// };
 
-  if (req.body.Experience) activity.Experience = parseField("Experience");
-  if (req.body.Itinerary) activity.Itinerary = parseField("Itinerary");
-  if (req.body.InfoAndLogistics)
-    activity.InfoAndLogistics = parseField("InfoAndLogistics");
-  if (req.body.BBQ_BUFFET) activity.BBQ_BUFFET = parseField("BBQ_BUFFET");
-  if (req.body.PrivateSUV) activity.PrivateSUV = parseField("PrivateSUV");
-  if(req.body.timeSlots) activity.timeSlots =parseField("timeSlots");
+const parseField = (field) => {
+  try {
+    const value = req.body[field];
+
+    // if (!value) return null;
+    if (value === undefined) return undefined;
+
+    // ✅ already object hai → return directly
+    if (typeof value === "object") return value;
+
+    // ✅ string hai → parse karo
+    return JSON.parse(value);
+
+  } catch (err) {
+    throw new ApiError(`${field} must be valid JSON`, 400);
+  }
+};
+
+const experience = parseField("Experience");
+const itinerary = parseField("Itinerary");
+const logistics = parseField("InfoAndLogistics");
+const bbq = parseField("BBQ_BUFFET");
+const suv = parseField("PrivateSUV");
+const timeSlots = parseField("timeSlots");
+
+if (experience !== undefined) activity.Experience = experience;
+if (itinerary !== undefined) activity.Itinerary = itinerary;
+if (logistics !== undefined) activity.InfoAndLogistics = logistics;
+if (bbq !== undefined) activity.BBQ_BUFFET = bbq;
+if (suv !== undefined) activity.PrivateSUV = suv;
+if (timeSlots !== undefined) activity.timeSlots = timeSlots;
   /* ======================================================
       REMOVE IMAGES
   ====================================================== */
@@ -150,13 +181,19 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
   if (req.body.removeImages) {
     const removeImages = JSON.parse(req.body.removeImages);
     // Delete from Cloudinary
-    await deleteFileFromCloudinary(removeImages);
+    // await deleteFileFromCloudinary(removeImages);
+    if (removeImages.length) {
+  await deleteFileFromCloudinary(removeImages);
+}
 
     // Remove from DB array
     const publicIdsToRemove = removeImages.map((img) => img.public_id);
-    activity.Images = activity.Images.filter((item) => {
-      !publicIdsToRemove.includes(item.public_id);
-    });
+    // activity.Images = activity.Images.filter((item) => {
+    //   !publicIdsToRemove.includes(item.public_id);
+    // });
+    activity.Images = activity.Images.filter(
+  (item) => !publicIdsToRemove.includes(item.public_id)
+);
   }
 
   /* ======================================================
@@ -164,12 +201,11 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
   ====================================================== */
 
   if (req.body.removeVideo) {
-    const removeVideo = JSON.parse(req.body.removeVideo);
-
-    await deleteFileFromCloudinary(removeVideo);
-
-    activity.Video = null;
+  if (activity.Video?.public_id) {
+    await deleteFileFromCloudinary(activity.Video.public_id);
   }
+  activity.Video = null;
+}
 
   /* ======================================================
       UPLOAD NEW IMAGES
@@ -195,10 +231,13 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
 
   if (req.files?.video?.length) {
     // Remove old video if exists
-    if (activity.Video?.publicId) {
-      await deleteFileFromCloudinary(activity.Video.publicId);
-    }
-
+    // if (activity.Video?.publicId) {
+    //   await deleteFileFromCloudinary(activity.Video.publicId);
+    // }
+    if (activity.Video?.public_id) {
+  await deleteFileFromCloudinary(activity.Video.public_id);
+}
+activity.Video = null;
     const uploadedVideo = await uploadFileToCloudinary(
       req.files.video,
       "activities/videos"
@@ -523,7 +562,9 @@ if (place) {
   // }
   const [activities, total] = await Promise.all([
     Activity.find(filter)
-      .populate("placeId", "name region")
+      // .populate("placeId", "name region")
+        .populate("placeId", "name region")
+    .populate("categoryId", "name image description")
       .select("-reviews")
       .sort({ createdAt: -1 })
       .skip(skip)
