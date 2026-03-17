@@ -275,71 +275,207 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
 });
 
 export const createPackage = asyncHandler(async (req, res, next) => {
-  const {
-    activityId,
-    name,
-    description,
-    price,
-    whatInclude = [],
-    whatExclude = [],
-    bookingFields = [],
-    addons = [],
-    isActive = true,
-  } = req.body;
 
-  if (!activityId || !name || price === undefined) {
-    return next(new ApiError("activityId, name and price are required", 400));
-  }
+  const session = await mongoose.startSession();
 
-  const activityExists = await Activity.exists({ _id: activityId });
+  try {
 
-  if (!activityExists) {
-    return next(new ApiError("Activity not found", 404));
-  }
+    session.startTransaction();
 
-  /* VALIDATE ADDONS */
-  if (addons.length) {
-    const uniqueAddons = new Set(addons);
+    const {
+      activityId,
+      name,
+      description,
+      price,
+      whatInclude = [],
+      whatExclude = [],
+      bookingFields = [],
+      addons = [],
+      isActive = true,
+    } = req.body;
 
-    if (uniqueAddons.size !== addons.length) {
-      return next(new ApiError("Duplicate addon ids are not allowed", 400));
+    if (!activityId || !name || price === undefined) {
+      throw new ApiError("activityId, name and price are required", 400);
     }
 
-    const addonCount = await addonsModel.countDocuments({
-      _id: { $in: addons },
+    const activityExists = await Activity.exists({ _id: activityId }).session(session);
+
+    if (!activityExists) {
+      throw new ApiError("Activity not found", 404);
+    }
+
+
+    if (addons.length) {
+
+      const uniqueAddons = [...new Set(addons)];
+
+      if (uniqueAddons.length !== addons.length) {
+        throw new ApiError("Duplicate addon ids are not allowed", 400);
+      }
+
+      const addonCount = await addonsModel
+        .countDocuments({ _id: { $in: uniqueAddons } })
+        .session(session);
+
+      if (addonCount !== uniqueAddons.length) {
+        throw new ApiError("Invalid addon ids", 400);
+      }
+    }
+
+
+    const sanitizedBookingFields = bookingFields.map(field => {
+
+      if (!field.name) {
+        throw new ApiError("Booking field name required", 400);
+      }
+
+      return {
+        name: field.name.trim(),
+        unit: field.unit || "quantity",
+        min: Math.max(Number(field.min) || 0, 0),
+        max: Math.max(Number(field.max) || 0, 0),
+        price: Math.max(Number(field.price) || 0, 0)
+      };
+
     });
 
-    if (addonCount !== addons.length) {
-      return next(new ApiError("One or more addons are invalid", 400));
-    }
+
+    const [pkg] = await Package.create(
+      [{
+        activityId,
+        name: name.trim(),
+        description: description?.trim() || "",
+        price: Number(price),
+        whatInclude,
+        whatExclude,
+        bookingFields: sanitizedBookingFields,
+        addons,
+        isActive
+      }],
+      { session }
+    );
+
+    /* UPDATE PACKAGE COUNT */
+
+    await Activity.updateOne(
+      { _id: activityId },
+      { $inc: { packageCount: 1 } },
+      { session }
+    );
+
+    await session.commitTransaction();
+
+    return successResponse(res, 201, "Package created successfully", pkg);
+
+  } catch (error) {
+
+    await session.abortTransaction();
+    return next(error);
+
+  } finally {
+
+    session.endSession();
+
   }
 
-  /* SANITIZE BOOKING FIELDS */
-  const sanitizedBookingFields = bookingFields.map((field) => ({
-    name: field.name?.trim(),
-    unit: field.unit || "quantity",
-    min: Number(field.min) || 0,
-    max: Number(field.max) || 0,
-    price: Number(field.price) || 0,
-  }));
-
-  const pkg = await Package.create({
-    activityId,
-    name: name.trim(),
-    description: description?.trim() || "",
-    price: Number(price),
-    whatInclude,
-    whatExclude,
-    bookingFields: sanitizedBookingFields,
-    addons,
-    isActive,
-  });
-
-  return successResponse(res, 201, "Package created successfully", pkg);
 });
 
+// export const getAllActivity = asyncHandler(async (req, res, next) => {
+//   let { page = 1, limit = 10, category, place, search } = req.query;
+
+//   page = Number(page);
+//   limit = Number(limit);
+//   const skip = (page - 1) * limit;
+
+//   /* ======================================================
+//      BUILD FILTER QUERY
+//   ====================================================== */
+//   const filter = {
+//     isActive: true,
+//   };
+
+//   /* ---------- SEARCH BY ACTIVITY NAME ---------- */
+//   if (search) {
+//     filter.name = { $regex: search, $options: "i" };
+//   }
+
+//   /* ======================================================
+//      CATEGORY FILTER (by category name)
+//   ====================================================== */
+//   if (category) {
+//     const categoryDoc = await Category.findOne({
+//       name: { $regex: `^${category}$`, $options: "i" },
+//     }).select("_id");
+
+//     if (!categoryDoc) {
+//       return successResponse(res, 200, "No activities found", {
+//         data: [],
+//         pagination: {
+//           total: 0,
+//           page,
+//           limit,
+//         },
+//       });
+//     }
+
+//     filter.categoryId = categoryDoc._id;
+//   }
+
+//   /* ======================================================
+//      PLACE FILTER (by region)
+//   ====================================================== */
+//   if (place) {
+//     const places = await Place.find({
+//       region: { $regex: place, $options: "i" },
+//     }).select("_id");
+
+//     if (!places.length) {
+//       return successResponse(res, 200, "No activities found", {
+//         data: [],
+//         pagination: {
+//           total: 0,
+//           page,
+//           limit,
+//         },
+//       });
+//     }
+
+//     filter.placeId = { $in: places.map((p) => p._id) };
+//   }
+
+//   /* ======================================================
+//      QUERY ACTIVITIES
+//   ====================================================== */
+//   const [activities, total] = await Promise.all([
+//     Activity.find(filter)
+//       .populate('placeId','name region')
+//       .select("-reviews") // optional: hide heavy fields
+//       .sort({ createdAt: -1 })
+//       .skip(skip)
+//       .limit(limit)
+//       .lean(),
+
+//     Activity.countDocuments(filter),
+//   ]);
+
+//   /* ======================================================
+//      RESPONSE
+//   ====================================================== */
+//   return successResponse(res, 200, "Activities fetched successfully", {
+//     data: activities,
+//     pagination: {
+//       total,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//     },
+//   });
+// });
+
+
+
 export const getAllActivity = asyncHandler(async (req, res, next) => {
-  let { page = 1, limit = 10, category, place, search } = req.query;
+  let { page = 1, limit = 10, categoryId, place, search } = req.query;
 
   page = Number(page);
   limit = Number(limit);
@@ -358,25 +494,10 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
   }
 
   /* ======================================================
-     CATEGORY FILTER (by category name)
+     CATEGORY FILTER (by categoryId)
   ====================================================== */
-  if (category) {
-    const categoryDoc = await Category.findOne({
-      name: { $regex: `^${category}$`, $options: "i" },
-    }).select("_id");
-
-    if (!categoryDoc) {
-      return successResponse(res, 200, "No activities found", {
-        data: [],
-        pagination: {
-          total: 0,
-          page,
-          limit,
-        },
-      });
-    }
-
-    filter.categoryId = categoryDoc._id;
+  if (categoryId) {
+    filter.categoryId = categoryId;
   }
 
   /* ======================================================
@@ -400,13 +521,10 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
 
     filter.placeId = { $in: places.map((p) => p._id) };
   }
-
-  /* ======================================================
-     QUERY ACTIVITIES
-  ====================================================== */
   const [activities, total] = await Promise.all([
     Activity.find(filter)
-      .select("-reviews") // optional: hide heavy fields
+      .populate("placeId", "name region")
+      .select("-reviews")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -414,10 +532,6 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
 
     Activity.countDocuments(filter),
   ]);
-
-  /* ======================================================
-     RESPONSE
-  ====================================================== */
   return successResponse(res, 200, "Activities fetched successfully", {
     data: activities,
     pagination: {
@@ -428,8 +542,6 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
     },
   });
 });
-
-
 export const updatePackage = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 

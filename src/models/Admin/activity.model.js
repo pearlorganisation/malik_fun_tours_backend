@@ -25,6 +25,11 @@ const ActivitySchema = new mongoose.Schema(
       ref: "Place",
       required: true,
     },
+    packageCount: {
+  type: Number,
+  default: 0,
+  min: 0
+},
     Images: [
       {
         secure_url: String,
@@ -146,6 +151,7 @@ const ActivitySchema = new mongoose.Schema(
         default: "SUV",
       },
     },
+    
     /* ---------- STATUS ---------- */
     isActive: {
       type: Boolean,
