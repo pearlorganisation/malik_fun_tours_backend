@@ -25,6 +25,11 @@ const ActivitySchema = new mongoose.Schema(
       ref: "Place",
       required: true,
     },
+    packageCount: {
+  type: Number,
+  default: 0,
+  min: 0
+},
     Images: [
       {
         secure_url: String,
@@ -35,6 +40,17 @@ const ActivitySchema = new mongoose.Schema(
       secure_url: String,
       public_id: String,
     },
+    /* ---------- TIME SLOTS ---------- */
+    timeSlots: [
+      {
+        type: String,
+        trim: true,
+        match: [
+          /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i,
+          "Invalid time format. Use HH:MM AM/PM",
+        ],
+      },
+    ],
     /* ---------- EXPERIENCE ---------- */
     Experience: {
       title: {
@@ -81,8 +97,8 @@ const ActivitySchema = new mongoose.Schema(
         description: {
           type: String,
         },
-        note:{
-          type:String,
+        note: {
+          type: String,
         },
         mapLink: {
           type: String,
@@ -135,6 +151,7 @@ const ActivitySchema = new mongoose.Schema(
         default: "SUV",
       },
     },
+    
     /* ---------- STATUS ---------- */
     isActive: {
       type: Boolean,

@@ -15,6 +15,9 @@ import {
   getAllActivity,
   createPackage,
   updatePackage,
+  getAllPackages,
+  getPackagesByActivity,
+  getPackageById,
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
 import {
@@ -54,7 +57,7 @@ router.put(
 );
 
 router.patch("/toggle/:id", toggleActivityStatusById);
-router.get("get-activity/:id", getActivityById);
+router.get("/get-activity/:id", getActivityById);
 router.get("/search", getAllActivity);
 
 router.post(
@@ -63,13 +66,16 @@ router.post(
   validateRequest,
   createPackage
 );
-router.post(
+router.put(
   "/update-package/:id",
   updatePackageValidator,
   validateRequest,
   updatePackage
 );
 
+router.get("/packages", getAllPackages);
+router.get("/packages/:activityId", getPackagesByActivity);
+router.get("/package/:id", getPackageById);
 // router.post("/", createPackageValidator, validateRequest, createPackage);
 
 // POST /api/admin/activities

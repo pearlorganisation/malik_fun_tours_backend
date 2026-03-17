@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 export const activityValidator = [
   /* ---------- BASIC FIELDS ---------- */
- 
+
   body("name")
     .notEmpty()
     .withMessage("Activity name is required")
@@ -28,7 +28,7 @@ export const activityValidator = [
     .notEmpty()
     .withMessage("Experience object is required")
     .custom((value) => {
-      console.log("hlo",typeof value);
+      console.log("hlo", typeof value);
       const exp = JSON.parse(value);
 
       if (!exp.title) throw new Error("Experience.title is required");
@@ -110,6 +110,30 @@ export const activityValidator = [
       if (suv.fee && typeof suv.fee !== "number") {
         throw new Error("PrivateSUV.fee must be number");
       }
+
+      return true;
+    }),
+  /* ---------- TIME SLOTS ---------- */
+
+  body("timeSlots")
+    .notEmpty()
+    .withMessage("timeSlots are required")
+    .custom((value) => {
+      const slots = JSON.parse(value);
+
+      if (!Array.isArray(slots)) {
+        throw new Error("timeSlots must be an array");
+      }
+
+      const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
+
+      slots.forEach((time, index) => {
+        if (typeof time !== "string" || !timeRegex.test(time.trim())) {
+          throw new Error(
+            `timeSlots item ${index + 1} must be in format HH:MM AM/PM`
+          );
+        }
+      });
 
       return true;
     }),
@@ -207,6 +231,29 @@ export const updateActivityValidator = [
 
       return true;
     }),
+  /* ---------- TIME SLOTS ---------- */
+
+  body("timeSlots")
+    .optional()
+    .custom((value) => {
+      const slots = JSON.parse(value);
+
+      if (!Array.isArray(slots)) {
+        throw new Error("timeSlots must be an array");
+      }
+
+      const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$/i;
+
+      slots.forEach((time, index) => {
+        if (typeof time !== "string" || !timeRegex.test(time.trim())) {
+          throw new Error(
+            `timeSlots item ${index + 1} must be in format HH:MM AM/PM`
+          );
+        }
+      });
+
+      return true;
+    }),
 ];
 
 export const createPackageValidator = [
@@ -222,6 +269,11 @@ export const createPackageValidator = [
     .withMessage("Package name is required")
     .isLength({ min: 2 })
     .withMessage("Package name must be at least 2 characters"),
+
+  body("description")
+    .optional()
+    .isString()
+    .withMessage("Description must be a string"),
 
   body("price")
     .notEmpty()
@@ -240,24 +292,65 @@ export const createPackageValidator = [
     .optional()
     .isArray()
     .withMessage("whatExclude must be an array of strings"),
+  /* ---------- ADDONS ---------- */
+
+  body("addons").optional().isArray().withMessage("addons must be an array"),
+
+  body("addons.*")
+    .optional()
+    .custom((value) => mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid addon id"),
+
+  /* ---------- BOOKING FIELDS VALIDATION ---------- */
+
+  body("bookingFields").isArray().withMessage("bookingFields must be an array"),
+
+  body("bookingFields.*.name")
+    .if(body("bookingFields").exists())
+    .notEmpty()
+    .withMessage("Booking field name is required"),
+
+  body("bookingFields.*.unit")
+    .if(body("bookingFields").exists())
+    .isIn(["minute", "quantity"])
+    .withMessage("Unit must be either minute or quantity"),
+
+  body("bookingFields.*.min")
+    .if(body("bookingFields").exists())
+    .isNumeric()
+    .withMessage("Min must be a number"),
+
+  body("bookingFields.*.max")
+    .if(body("bookingFields").exists())
+    .isNumeric()
+    .withMessage("Max must be a number"),
+
+  body("bookingFields.*.price")
+    .optional()
+    .isNumeric()
+    .withMessage("Booking field price must be a number")
+    .custom((value) => value >= 0)
+    .withMessage("Booking field price must be >= 0"),
 ];
 
 export const updatePackageValidator = [
-  /* ---------- packageId in params ---------- */
   param("id")
     .notEmpty()
     .withMessage("Package ID is required")
     .custom((value) => mongoose.Types.ObjectId.isValid(value))
     .withMessage("Invalid Package ID"),
 
-  /* ---------- name (optional) ---------- */
   body("name")
     .optional()
     .trim()
     .isLength({ min: 2 })
     .withMessage("Package name must be at least 2 characters"),
 
-  /* ---------- price (optional) ---------- */
+  body("description")
+    .optional()
+    .isString()
+    .withMessage("Description must be a string"),
+
   body("price")
     .optional()
     .isNumeric()
@@ -265,15 +358,59 @@ export const updatePackageValidator = [
     .custom((value) => value >= 0)
     .withMessage("Price must be greater than or equal to 0"),
 
-  /* ---------- whatInclude ---------- */
   body("whatInclude")
     .optional()
     .isArray()
-    .withMessage("whatInclude must be an array of strings"),
+    .withMessage("whatInclude must be an array"),
 
-  /* ---------- whatExclude ---------- */
   body("whatExclude")
     .optional()
     .isArray()
-    .withMessage("whatExclude must be an array of strings"),
+    .withMessage("whatExclude must be an array"),
+
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("isActive must be boolean"),
+
+  body("addons").optional().isArray().withMessage("addons must be an array"),
+
+  body("addons.*")
+    .optional()
+    .custom((value) => mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid addon id"),
+
+  /* ---------- BOOKING FIELDS ---------- */
+
+  body("bookingFields")
+    .optional()
+    .isArray()
+    .withMessage("bookingFields must be an array"),
+
+  body("bookingFields.*.name")
+    .optional()
+    .notEmpty()
+    .withMessage("Booking field name is required"),
+
+  body("bookingFields.*.unit")
+    .optional()
+    .isIn(["minute", "quantity"])
+    .withMessage("Unit must be either minute or quantity"),
+
+  body("bookingFields.*.min")
+    .optional()
+    .isNumeric()
+    .withMessage("Min must be a number"),
+
+  body("bookingFields.*.max")
+    .optional()
+    .isNumeric()
+    .withMessage("Max must be a number"),
+
+  body("bookingFields.*.price")
+    .optional()
+    .isNumeric()
+    .withMessage("Booking field price must be a number")
+    .custom((value) => value >= 0)
+    .withMessage("Booking field price must be >= 0"),
 ];
