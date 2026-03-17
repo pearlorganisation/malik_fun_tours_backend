@@ -481,46 +481,46 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
   limit = Number(limit);
   const skip = (page - 1) * limit;
 
-  /* ======================================================
-     BUILD FILTER QUERY
-  ====================================================== */
   const filter = {
-    isActive: true,
-  };
+  isActive: true,
+};
 
-  /* ---------- SEARCH BY ACTIVITY NAME ---------- */
-  if (search) {
-    filter.name = { $regex: search, $options: "i" };
-  }
+/* SEARCH */
+if (search) {
+  filter.name = { $regex: search, $options: "i" };
+}
 
-  /* ======================================================
-     CATEGORY FILTER (by categoryId)
-  ====================================================== */
-  if (categoryId) {
-    filter.categoryId = categoryId;
-  }
+/* CATEGORY */
+if (categoryId) {
+  filter.categoryId = categoryId;
+}
+
+/* LOCATION (ID BASED 🔥) */
+if (place) {
+  filter.placeId = place;
+}
 
   /* ======================================================
      PLACE FILTER (by region)
   ====================================================== */
-  if (place) {
-    const places = await Place.find({
-      region: { $regex: place, $options: "i" },
-    }).select("_id");
+  // if (place) {
+  //   const places = await Place.find({
+  //     region: { $regex: place, $options: "i" },
+  //   }).select("_id");
 
-    if (!places.length) {
-      return successResponse(res, 200, "No activities found", {
-        data: [],
-        pagination: {
-          total: 0,
-          page,
-          limit,
-        },
-      });
-    }
+  //   if (!places.length) {
+  //     return successResponse(res, 200, "No activities found", {
+  //       data: [],
+  //       pagination: {
+  //         total: 0,
+  //         page,
+  //         limit,
+  //       },
+  //     });
+  //   }
 
-    filter.placeId = { $in: places.map((p) => p._id) };
-  }
+  //   filter.placeId = { $in: places.map((p) => p._id) };
+  // }
   const [activities, total] = await Promise.all([
     Activity.find(filter)
       .populate("placeId", "name region")
