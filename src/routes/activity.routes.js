@@ -51,8 +51,8 @@ router.put(
     { name: "images", maxCount: 10 },
     { name: "video", maxCount: 1 },
   ]),
-  updateActivityValidator,
-  validateRequest,
+  // updateActivityValidator,
+  // validateRequest,
   updateActivity
 );
 
