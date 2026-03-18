@@ -9,10 +9,11 @@ const spotSchema = new mongoose.Schema(
       trim: true,
     },
 
-    category: {
-      type: String, // e.g. Attraction
-      default: "Attraction",
-    },
+  category: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Category",
+  required: true,
+},
 
     location: {
       type: String, // City Center
