@@ -39,7 +39,7 @@ const PackageSchema = new mongoose.Schema(
   {
     activityId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Activity",
+      ref: "Activity_Malik",
       required: true,
       index: true,
     },
