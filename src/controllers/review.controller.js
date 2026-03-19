@@ -7,7 +7,7 @@ export const createReview = async (req, res) => {
 
     await Review.create({
       activity: activityId,
-      user: req.user._id,
+      user: req.user?._id || null,
       rating,
       comment,
     });
@@ -158,6 +158,97 @@ export const deleteReview = async (req, res) => {
     res.json({
       success: true,
       message: "Review deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const getAllReviews = async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 5);
+    const skip = (page - 1) * limit;
+
+    const [reviews, total, stats] = await Promise.all([
+      Review.find({})
+        .populate("user", "name email")   // 👈 extra fields if needed
+  .populate({
+  path: "activity",
+  select: "name placeId",
+  populate: [
+    {
+      path: "placeId",
+      select: "name country",
+    },
+  ],
+})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      Review.countDocuments(),
+
+      Review.aggregate([
+        {
+          $group: {
+            _id: null,
+            avgRating: { $avg: "$rating" },
+            totalReviews: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    // ✅ FIXED PART
+    const avgRating =
+      stats.length > 0 ? Number(stats[0].avgRating.toFixed(1)) : 0;
+
+    const totalReviews =
+      stats.length > 0 ? stats[0].totalReviews : 0;
+
+    res.json({
+      success: true,
+
+      summary: {
+        avgRating,
+        totalReviews,
+      },
+
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+
+      reviews,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getReviewStats = async (req, res) => {
+  try {
+    const stats = await Review.aggregate([
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const avgRating = stats.length ? Number(stats[0].avgRating.toFixed(1)) : 0;
+    const totalReviews = stats.length ? stats[0].totalReviews : 0;
+
+    res.json({
+      success: true,
+      avgRating,
+      totalReviews,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

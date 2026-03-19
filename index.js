@@ -17,6 +17,7 @@ import spotRouter from "./src/routes/spot.routes.js";
 import placeRouter from "./src/routes/place.routes.js";
 import reviewRouter from "./src/routes/review.routes.js";
 import contactRouter from "./src/routes/contact.routes.js";
+import inquiryRoutes from "./src/routes/inquiry.routes.js";
 configDotenv();
 
 const stripe_parser = bodyParser.raw({ type: "application/json" });
@@ -66,6 +67,7 @@ app.use(`/health`, async (req, res) => {
 
 /** declare our routes */
 
+app.use("/api/v1/inquiry", inquiryRoutes);
 app.use(`/api/v1/activity`, activityRouter);
 app.use(`/api/v1/auth`, authRouter);
 app.use(`/api/v1/user`, userRouter);
