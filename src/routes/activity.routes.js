@@ -18,6 +18,7 @@ import {
   getAllPackages,
   getPackagesByActivity,
   getPackageById,
+  getTopSellingTours
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
 import {
@@ -83,4 +84,5 @@ router.get("/package/:id", getPackageById);
 // router.delete("/:id", deleteActivity); // DELETE /api/admin/activities/:id
 // router.patch("/:id/toggle-active", toggleActive); // PATCH toggle status
 
+router.get("/top-rated", getTopSellingTours)
 export default router;

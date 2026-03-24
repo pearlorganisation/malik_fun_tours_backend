@@ -670,3 +670,90 @@ export const getPackageById = asyncHandler(async (req, res, next) => {
 
   return successResponse(res, 200, "Package fetched successfully", pkg);
 });
+
+
+
+//top rated activities
+export const getTopSellingTours = asyncHandler(async (req, res, next) => {
+  const activities = await Activity.aggregate([
+    // 1. Only get active activities
+    { $match: { isActive: true } },
+
+    /* ---------- CALCULATE RATINGS ---------- */
+    {
+      $lookup: {
+        from: "reviews", // Check your DB, might be "review_maliks" if using your custom naming
+        localField: "_id", // Activity ID
+        foreignField: "activity", // The field name in your Review image
+        as: "reviewDetails",
+      },
+    },
+    {
+      $addFields: {
+        averageRating: { $ifNull: [{ $avg: "$reviewDetails.rating" }, 0] },
+        totalReviews: { $size: "$reviewDetails" },
+      },
+    },
+
+    /* ---------- GET MINIMUM PRICE FROM PACKAGES ---------- */
+    {
+      $lookup: {
+        from: "packages", 
+        localField: "_id",
+        foreignField: "activityId",
+        as: "packages",
+      },
+    },
+    {
+      $addFields: {
+        startingPrice: { $min: "$packages.price" },
+      },
+    },
+
+    /* ---------- GET PLACE INFO ---------- */
+    {
+      $lookup: {
+        from: "places", 
+        localField: "placeId",
+        foreignField: "_id",
+        as: "place",
+      },
+    },
+    { $unwind: { path: "$place", preserveNullAndEmptyArrays: true } },
+
+    /* ---------- GET CATEGORY INFO ---------- */
+    {
+      $lookup: {
+        from: "categories", 
+        localField: "categoryId",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+
+    /* ---------- SORT BY RATING ---------- */
+    { $sort: { averageRating: -1, totalReviews: -1 } },
+
+    /* ---------- LIMIT ---------- */
+    { $limit: 10 },
+
+    /* ---------- FINAL OBJECT MAPPING ---------- */
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        slug: 1,
+        // Get first image from array
+        image: { $arrayElemAt: ["$Images.secure_url", 0] }, 
+        rating: { $round: ["$averageRating", 1] },
+        reviewCount: "$totalReviews",
+        location: { $ifNull: ["$place.name", "N/A"] },
+        categoryName: { $ifNull: ["$category.name", "N/A"] },
+        startingPrice: { $ifNull: ["$startingPrice", 0] },
+      },
+    },
+  ]);
+
+  return successResponse(res, 200, "Top selling tours fetched", activities);
+});
