@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Addon from "../models/addon.model.js";
+import Addon from "../models/Admin/addons.model.js";
 import { asyncHandler } from "../utils/error/asyncHandler.js";
 import ApiError from "../utils/error/ApiError.js";
 import successResponse from "../utils/error/successResponse.js";
