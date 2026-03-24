@@ -52,10 +52,7 @@ const validateBookingDatafn = async(  BookingFiledIds , packageId , addons , act
             throw new Error(`${fieldDefinition.name} must be at least ${fieldDefinition.duration} or in proper fraction`);
         }
 
-
-
-
-         
+ 
             const valueToCalculateOn = userInput.value
          
         
@@ -166,6 +163,27 @@ if (isSuvSelected) {
 
 
 
+export const validateExistingBooking = async (bookingId, userId) => {
+    const booking = await Booking.findById(bookingId);
+    
+    if (!booking) {
+        throw new Error("Booking not found");
+    }
+
+    // Ownership check
+    if (booking.user.toString() !== userId.toString()) {
+        throw new Error("Unauthorized access");
+    }
+
+    // Status check
+    if (booking.paymentStatus === "paid" || booking.status === "confirmed") {
+        throw new Error("This booking is already paid and confirmed.");
+    }
+
+    return booking;
+};
+
+
 
 export const createOrder = async (req, res) => {
     try {
@@ -175,9 +193,31 @@ export const createOrder = async (req, res) => {
             activityId, 
             isSuvSelected, 
             addons = [], 
-            totalAmount 
+            totalAmount ,
+            date ,
+            time,
+            bookingId 
         } = req.body;
+
+        let existingBooking = null;
+
+        if (bookingId) {
+            existingBooking = await validateExistingBooking(bookingId, req.user._id);
+        }
         
+
+    if (!BookingFiledIds || !packageId || !activityId) {
+        return res.status(400).json({
+            message: "Booking fields, package ID, and activity ID are required",
+            success: false,
+        });
+    }
+    if (!date || !time) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Date and Time are required" 
+            });
+        }
         // 1. Validate Business Logic (Your existing function)
         const { calculatedAmount, breakdown } = await validateBookingDatafn(
             BookingFiledIds,
@@ -205,20 +245,57 @@ export const createOrder = async (req, res) => {
         });
 
         // 4. Save to Database using your specific schema fields
-        const booking = await Booking.create({
-            user: req.user?._id,
-            activity: activityId,
-            packageId: packageId,
-            bookingFields: BookingFiledIds.map(f => ({ fieldId: f.id, value: f.value })),
-            addons: addons.map(a => ({ addonId: a.id, title: a.title, price: a.price, quantity: a.quantity })),
-            isSuvSelected: isSuvSelected,
-            currency: 'USD', // Update this in your DB record
-            totalAmount: calculatedAmount,
-            amountBreakdown: breakdown,
-            paymentIntentId: paymentIntent.id,
-            paymentStatus: "pending",
-            status: "pending"
-        });
+        // const booking = await Booking.create({
+        //     user: req.user?._id,
+        //     activity: activityId,
+        //     packageId: packageId,
+        //     bookingFields: BookingFiledIds.map(f => ({ fieldId: f.id, value: f.value })),
+        //     addons: addons.map(a => ({ addonId: a.id, title: a.title, price: a.price, quantity: a.quantity })),
+        //     isSuvSelected: isSuvSelected,
+        //        date: new Date(date),
+        //        timeSlot: time,       // 2. Add this
+
+        //     currency: 'USD', // Update this in your DB record
+        //     totalAmount: calculatedAmount,
+        //     amountBreakdown: breakdown,
+        //     paymentIntentId: paymentIntent.id,
+        //     paymentStatus: "pending",
+        //     status: "pending"
+        // });
+
+          let booking;
+        if (existingBooking) {
+            booking = await Booking.findByIdAndUpdate(
+                bookingId,
+                {
+                    bookingFields: BookingFiledIds.map(f => ({ fieldId: f.id, value: f.value })),
+                    addons: addons.map(a => ({ addonId: a.id, title: a.title, price: a.price, quantity: a.quantity })),
+                    isSuvSelected,
+                    totalAmount: calculatedAmount,
+                    amountBreakdown: breakdown,
+                    paymentIntentId: paymentIntent.id,
+                    paymentStatus: "pending"
+                },
+                { new: true }
+            );
+        } else {
+            booking = await Booking.create({
+                user: req.user._id,
+                activity: activityId,
+                packageId,
+                date: new Date(date),
+                timeSlot: time,
+                bookingFields: BookingFiledIds.map(f => ({ fieldId: f.id, value: f.value })),
+                addons: addons.map(a => ({ addonId: a.id, title: a.title, price: a.price, quantity: a.quantity })),
+                isSuvSelected,
+                currency: 'USD',
+                totalAmount: calculatedAmount,
+                amountBreakdown: breakdown,
+                paymentIntentId: paymentIntent.id,
+                paymentStatus: "pending",
+                status: "pending"
+            });
+        }
         // 5. Return success and client secret
         return res.status(200).json({
             success: true,
@@ -227,8 +304,10 @@ export const createOrder = async (req, res) => {
         });
 
     } catch (err) {
+        // Handle errors from both the helper function and the controller
         console.error("Order creation error:", err);
-        return res.status(500).json({ success: false, message: err.message });
+        return res.status(err.message === "Booking not found" || err.message === "Unauthorized access" ? 403 : 500)
+            .json({ success: false, message: err.message });
     }
 }
 

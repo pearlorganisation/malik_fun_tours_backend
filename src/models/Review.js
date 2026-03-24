@@ -4,14 +4,14 @@ const ReviewSchema = new mongoose.Schema(
   {
     activity: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Activity",
+      ref: "Activity_Malik",
       required: true,
       index: true,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
     },
     rating: {
       type: Number,

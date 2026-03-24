@@ -15,6 +15,10 @@ import {
   getAllActivity,
   createPackage,
   updatePackage,
+  getAllPackages,
+  getPackagesByActivity,
+  getPackageById,
+  getTopSellingTours
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
 import {
@@ -48,13 +52,13 @@ router.put(
     { name: "images", maxCount: 10 },
     { name: "video", maxCount: 1 },
   ]),
-  updateActivityValidator,
-  validateRequest,
+  // updateActivityValidator,
+  // validateRequest,
   updateActivity
 );
 
 router.patch("/toggle/:id", toggleActivityStatusById);
-router.get("get-activity/:id", getActivityById);
+router.get("/get-activity/:id", getActivityById);
 router.get("/search", getAllActivity);
 
 router.post(
@@ -70,6 +74,9 @@ router.put(
   updatePackage
 );
 
+router.get("/packages", getAllPackages);
+router.get("/packages/:activityId", getPackagesByActivity);
+router.get("/package/:id", getPackageById);
 // router.post("/", createPackageValidator, validateRequest, createPackage);
 
 // POST /api/admin/activities
@@ -77,4 +84,5 @@ router.put(
 // router.delete("/:id", deleteActivity); // DELETE /api/admin/activities/:id
 // router.patch("/:id/toggle-active", toggleActive); // PATCH toggle status
 
+router.get("/top-rated", getTopSellingTours)
 export default router;

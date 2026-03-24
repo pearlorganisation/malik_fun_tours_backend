@@ -2,7 +2,6 @@ import {
   uploadFileToCloudinary,
   deleteFileFromCloudinary,
 } from "../configs/cloudinary.js";
-
 import mongoose from "mongoose";
 import slugify from "slugify";
 import Activity from "../models/Admin/activity.model.js";
@@ -13,360 +12,6 @@ import { asyncHandler } from "../utils/error/asyncHandler.js";
 import ApiError from "../utils/error/ApiError.js";
 import successResponse from "../utils/error/successResponse.js";
 import addonsModel from "../models/Admin/addons.model.js";
-// // GET all activities (with optional filters)
-// export const getAllActivities = async (req, res) => {
-//   try {
-//     const {
-//       page = 1,
-//       limit = 10,
-//       isActive,
-//       category,
-//       categories,
-//       location,
-//       duration,
-//     } = req.query;
-//     const filter =
-//       isActive !== undefined ? { isActive: isActive === "true" } : {};
-
-//     if (categories) {
-//       const categoryArray = Array.isArray(categories)
-//         ? categories
-//         : categories.split(",");
-
-//       filter.category = { $in: categoryArray };
-//     } else if (category) {
-//       filter.category = category;
-//     }
-
-//     if (location) {
-//       filter.location = location;
-//     }
-
-//     if (duration) {
-//       if (duration === "0-1") {
-//         filter["duration.hours"] = { $lte: 1 };
-//       }
-
-//       if (duration === "1-4") {
-//         filter["duration.hours"] = { $gte: 1, $lte: 4 };
-//       }
-
-//       if (duration === "4-24") {
-//         filter["duration.hours"] = { $gte: 4, $lte: 24 };
-//       }
-
-//       if (duration === "24+") {
-//         filter["duration.hours"] = { $gt: 24 };
-//       }
-//     }
-
-//     const activities = await Activity.find(filter)
-//       .limit(limit * 1)
-//       .skip((page - 1) * limit)
-//       .sort({ createdAt: -1 });
-
-//     const total = await Activity.countDocuments(filter);
-
-//     res.json({
-//       activities,
-//       total,
-//       page: parseInt(page),
-//       pages: Math.ceil(total / limit),
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// // GET populaer acitivies
-// export const getPopularActivities = async (req, res) => {
-//   try {
-//     const limit = Number(req.query.limit) || 10;
-
-//     const activities = await Activity.aggregate([
-//       {
-//         $match: {
-//           isActive: true,
-//           reviewCount: { $gt: 0 },
-//         },
-//       },
-//       {
-//         $addFields: {
-//           popularityScore: {
-//             $add: [
-//               { $multiply: ["$rating", 0.7] },
-//               {
-//                 $multiply: [{ $ln: { $add: ["$reviewCount", 1] } }, 0.3],
-//               },
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { popularityScore: -1 } },
-//       { $limit: limit },
-//       {
-//         $project: {
-//           title: 1,
-//           shortDescription: 1,
-//           category: 1,
-//           location: 1,
-//           images: 1,
-//           rating: 1,
-//           reviewCount: 1,
-//           popularityScore: 1,
-//         },
-//       },
-//     ]);
-
-//     res.status(200).json({
-//       success: true,
-//       activities,
-//     });
-//   } catch (error) {
-//     console.error("Popular Activities Error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to fetch popular activities",
-//     });
-//   }
-// };
-
-// // Get popular locations
-// export const getPopularLocations = async (req, res) => {
-//   try {
-//     const limit = Number(req.query.limit) || 10;
-
-//     const locations = await Activity.aggregate([
-//       {
-//         $match: {
-//           isActive: true,
-//           location: { $exists: true, $ne: "" },
-//           reviewCount: { $gt: 0 },
-//         },
-//       },
-
-//       // Group activities by location
-//       {
-//         $group: {
-//           _id: "$location",
-
-//           totalActivities: { $sum: 1 },
-//           totalReviews: { $sum: "$reviewCount" },
-//           avgRating: { $avg: "$rating" },
-
-//           // Pick one main image from activities
-//           image: {
-//             $first: {
-//               $arrayElemAt: [
-//                 {
-//                   $filter: {
-//                     input: "$images",
-//                     as: "img",
-//                     cond: { $eq: ["$$img.isMain", true] },
-//                   },
-//                 },
-//                 0,
-//               ],
-//             },
-//           },
-//         },
-//       },
-
-//       // Calculate popularity score
-//       {
-//         $addFields: {
-//           popularityScore: {
-//             $add: [
-//               { $multiply: ["$avgRating", 0.7] },
-//               {
-//                 $multiply: [{ $ln: { $add: ["$totalReviews", 1] } }, 0.3],
-//               },
-//             ],
-//           },
-//         },
-//       },
-
-//       // Sort by popularity
-//       { $sort: { popularityScore: -1 } },
-
-//       // Limit results
-//       { $limit: limit },
-
-//       // Final shape
-//       {
-//         $project: {
-//           _id: 0,
-//           location: "$_id",
-//           totalActivities: 1,
-//           totalReviews: 1,
-//           avgRating: { $round: ["$avgRating", 1] },
-//           popularityScore: { $round: ["$popularityScore", 2] },
-//           image: 1,
-//         },
-//       },
-//     ]);
-
-//     res.status(200).json({
-//       success: true,
-//       locations,
-//     });
-//   } catch (error) {
-//     console.error("Popular Locations Error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to fetch popular locations",
-//     });
-//   }
-// };
-
-// // GET single activity by ID
-// export const getActivityById = async (req, res) => {
-//   try {
-//     const activity = await Activity.findById(req.params.id);
-//     if (!activity)
-//       return res.status(404).json({ message: "Activity not found" });
-//     res.json(activity);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-// // GET activities by category
-// export const getActivitiesByCategory = async (req, res) => {
-//   try {
-//     const activities = await Activity.find({ category: req.params.category });
-//     if (activities.length === 0) {
-//       return res
-//         .status(404)
-//         .json({ message: "No activities found in this category" });
-//     }
-//     res.json(activities);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// // CREATE new activity
-// export const createActivity = async (req, res) => {
-//   try {
-//     console.log("req video file:", req.files?.video);
-//     console.log("req image files:", req.files?.images);
-
-//     /* ---------------- PARSE BODY ---------------- */
-//     const data = {
-//       title: req.body.title,
-//       shortDescription: req.body.shortDescription,
-//       fullDescription: req.body.fullDescription,
-//       category: req.body.category,
-//       location: req.body.location,
-//       tags: parseJSON(req.body.tags, []),
-//       duration: parseJSON(req.body.duration, {}),
-//       languages: parseJSON(req.body.languages, []),
-//       liveGuide: req.body.liveGuide === "true",
-
-//       cancellationPolicy: parseJSON(req.body.cancellationPolicy, {}),
-//       reservePolicy: parseJSON(req.body.reservePolicy, {}),
-//       pickup: parseJSON(req.body.pickup, {}),
-
-//       variants: parseJSON(req.body.variants, []),
-//       availableDates: parseJSON(req.body.availableDates, []),
-//       timeSlots: parseJSON(req.body.timeSlots, []),
-//       itinerary: parseJSON(req.body.itinerary, []),
-//       highlights: parseJSON(req.body.highlights, []),
-//       includes: parseJSON(req.body.includes, []),
-//       excludes: parseJSON(req.body.excludes, []),
-//       addons: parseJSON(req.body.addons, []),
-//       notSuitableFor: parseJSON(req.body.notSuitableFor, []),
-//       importantInfo: parseJSON(req.body.importantInfo, []),
-
-//       isActive: req.body.isActive === "true",
-//     };
-
-//     /* ---------------- UPLOAD IMAGES ---------------- */
-//     if (req.files?.images?.length) {
-//       const uploadedImages = await uploadFileToCloudinary(
-//         req.files.images,
-//         "activities/images"
-//       );
-
-//       data.images = uploadedImages.map((img, index) => ({
-//         url: img.url,
-//         public_id: img.public_id,
-//         isMain: index === 0,
-//       }));
-//     }
-
-//     /* ---------------- UPLOAD VIDEO ---------------- */
-//     if (req.files?.video?.length) {
-//       const [video] = await uploadFileToCloudinary(
-//         req.files.video,
-//         "activities/videos"
-//       );
-
-//       data.video = {
-//         url: video.url,
-//         public_id: video.public_id,
-//       };
-//     }
-
-//     /* ---------------- SAVE ---------------- */
-//     const activity = await Activity.create(data);
-
-//     return res.status(201).json({
-//       success: true,
-//       message: "Activity created successfully",
-//       data: activity,
-//     });
-//   } catch (error) {
-//     console.error("Create Activity Error:", error);
-//     return res.status(400).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
-
-// // UPDATE activity (full replace or partial)
-// export const updateActivity = async (req, res) => {
-//   try {
-//     const activity = await Activity.findByIdAndUpdate(req.params.id, req.body, {
-//       new: true,
-//       runValidators: true,
-//     });
-//     if (!activity)
-//       return res.status(404).json({ message: "Activity not found" });
-//     res.json(activity);
-//   } catch (error) {
-//     res.status(400).json({ message: error.message });
-//   }
-// };
-
-// // DELETE activity
-// export const deleteActivity = async (req, res) => {
-//   try {
-//     const activity = await Activity.findByIdAndDelete(req.params.id);
-//     if (!activity)
-//       return res.status(404).json({ message: "Activity not found" });
-//     res.json({ message: "Activity deleted successfully" });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// // Toggle active status (soft enable/disable)
-// export const toggleActive = async (req, res) => {
-//   try {
-//     const activity = await Activity.findById(req.params.id);
-//     if (!activity)
-//       return res.status(404).json({ message: "Activity not found" });
-
-//     activity.isActive = !activity.isActive;
-//     await activity.save();
-
-//     res.json(activity);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 export const createActivity = asyncHandler(async (req, res, next) => {
   const {
@@ -488,16 +133,47 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
   }
 
   /* ---------- PARSE JSON FIELDS ---------- */
-  const parseField = (field) =>
-    req.body[field] ? JSON.parse(req.body[field]) : null;
+  // const parseField = (field) =>
+  //   req.body[field] ? JSON.parse(req.body[field]) : null;
+//   const parseField = (field) => {
+//   try {
+//     return req.body[field] ? JSON.parse(req.body[field]) : null;
+//   } catch (err) {
+//     throw new ApiError(`${field} must be valid JSON`, 400);
+//   }
+// };
 
-  if (req.body.Experience) activity.Experience = parseField("Experience");
-  if (req.body.Itinerary) activity.Itinerary = parseField("Itinerary");
-  if (req.body.InfoAndLogistics)
-    activity.InfoAndLogistics = parseField("InfoAndLogistics");
-  if (req.body.BBQ_BUFFET) activity.BBQ_BUFFET = parseField("BBQ_BUFFET");
-  if (req.body.PrivateSUV) activity.PrivateSUV = parseField("PrivateSUV");
-  if(req.body.timeSlots) activity.timeSlots =parseField("timeSlots");
+const parseField = (field) => {
+  try {
+    const value = req.body[field];
+
+    // if (!value) return null;
+    if (value === undefined) return undefined;
+
+    // ✅ already object hai → return directly
+    if (typeof value === "object") return value;
+
+    // ✅ string hai → parse karo
+    return JSON.parse(value);
+
+  } catch (err) {
+    throw new ApiError(`${field} must be valid JSON`, 400);
+  }
+};
+
+const experience = parseField("Experience");
+const itinerary = parseField("Itinerary");
+const logistics = parseField("InfoAndLogistics");
+const bbq = parseField("BBQ_BUFFET");
+const suv = parseField("PrivateSUV");
+const timeSlots = parseField("timeSlots");
+
+if (experience !== undefined) activity.Experience = experience;
+if (itinerary !== undefined) activity.Itinerary = itinerary;
+if (logistics !== undefined) activity.InfoAndLogistics = logistics;
+if (bbq !== undefined) activity.BBQ_BUFFET = bbq;
+if (suv !== undefined) activity.PrivateSUV = suv;
+if (timeSlots !== undefined) activity.timeSlots = timeSlots;
   /* ======================================================
       REMOVE IMAGES
   ====================================================== */
@@ -505,13 +181,19 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
   if (req.body.removeImages) {
     const removeImages = JSON.parse(req.body.removeImages);
     // Delete from Cloudinary
-    await deleteFileFromCloudinary(removeImages);
+    // await deleteFileFromCloudinary(removeImages);
+    if (removeImages.length) {
+  await deleteFileFromCloudinary(removeImages);
+}
 
     // Remove from DB array
     const publicIdsToRemove = removeImages.map((img) => img.public_id);
-    activity.Images = activity.Images.filter((item) => {
-      !publicIdsToRemove.includes(item.public_id);
-    });
+    // activity.Images = activity.Images.filter((item) => {
+    //   !publicIdsToRemove.includes(item.public_id);
+    // });
+    activity.Images = activity.Images.filter(
+  (item) => !publicIdsToRemove.includes(item.public_id)
+);
   }
 
   /* ======================================================
@@ -519,12 +201,11 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
   ====================================================== */
 
   if (req.body.removeVideo) {
-    const removeVideo = JSON.parse(req.body.removeVideo);
-
-    await deleteFileFromCloudinary(removeVideo);
-
-    activity.Video = null;
+  if (activity.Video?.public_id) {
+    await deleteFileFromCloudinary(activity.Video.public_id);
   }
+  activity.Video = null;
+}
 
   /* ======================================================
       UPLOAD NEW IMAGES
@@ -550,10 +231,13 @@ export const updateActivity = asyncHandler(async (req, res, next) => {
 
   if (req.files?.video?.length) {
     // Remove old video if exists
-    if (activity.Video?.publicId) {
-      await deleteFileFromCloudinary(activity.Video.publicId);
-    }
-
+    // if (activity.Video?.publicId) {
+    //   await deleteFileFromCloudinary(activity.Video.publicId);
+    // }
+    if (activity.Video?.public_id) {
+  await deleteFileFromCloudinary(activity.Video.public_id);
+}
+activity.Video = null;
     const uploadedVideo = await uploadFileToCloudinary(
       req.files.video,
       "activities/videos"
@@ -612,6 +296,7 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
     return next(new ApiError("INVALID API ID", 400));
   }
 
+
   /* ---------- FIND ACTIVITY + VIRTUAL PACKAGES ---------- */
   const activity = await Activity.findById(id).populate({
     path: "packages",
@@ -628,75 +313,259 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
   return successResponse(res, 200, "Activity found ", activity);
 });
 
+export const createPackage = asyncHandler(async (req, res, next) => {
+
+  const session = await mongoose.startSession();
+
+  try {
+
+    session.startTransaction();
+
+    const {
+      activityId,
+      name,
+      description,
+      price,
+      whatInclude = [],
+      whatExclude = [],
+      bookingFields = [],
+      addons = [],
+      isActive = true,
+    } = req.body;
+
+    if (!activityId || !name || price === undefined) {
+      throw new ApiError("activityId, name and price are required", 400);
+    }
+
+    const activityExists = await Activity.exists({ _id: activityId }).session(session);
+
+    if (!activityExists) {
+      throw new ApiError("Activity not found", 404);
+    }
+
+
+    if (addons.length) {
+
+      const uniqueAddons = [...new Set(addons)];
+
+      if (uniqueAddons.length !== addons.length) {
+        throw new ApiError("Duplicate addon ids are not allowed", 400);
+      }
+
+      const addonCount = await addonsModel
+        .countDocuments({ _id: { $in: uniqueAddons } })
+        .session(session);
+
+      if (addonCount !== uniqueAddons.length) {
+        throw new ApiError("Invalid addon ids", 400);
+      }
+    }
+
+
+    const sanitizedBookingFields = bookingFields.map(field => {
+
+      if (!field.name) {
+        throw new ApiError("Booking field name required", 400);
+      }
+
+      return {
+        name: field.name.trim(),
+        unit: field.unit || "quantity",
+        min: Math.max(Number(field.min) || 0, 0),
+        max: Math.max(Number(field.max) || 0, 0),
+        price: Math.max(Number(field.price) || 0, 0)
+      };
+
+    });
+
+
+    const [pkg] = await Package.create(
+      [{
+        activityId,
+        name: name.trim(),
+        description: description?.trim() || "",
+        price: Number(price),
+        whatInclude,
+        whatExclude,
+        bookingFields: sanitizedBookingFields,
+        addons,
+        isActive
+      }],
+      { session }
+    );
+
+    /* UPDATE PACKAGE COUNT */
+
+    await Activity.updateOne(
+      { _id: activityId },
+      { $inc: { packageCount: 1 } },
+      { session }
+    );
+
+    await session.commitTransaction();
+
+    return successResponse(res, 201, "Package created successfully", pkg);
+
+  } catch (error) {
+
+    await session.abortTransaction();
+    return next(error);
+
+  } finally {
+
+    session.endSession();
+
+  }
+
+});
+
+// export const getAllActivity = asyncHandler(async (req, res, next) => {
+//   let { page = 1, limit = 10, category, place, search } = req.query;
+
+//   page = Number(page);
+//   limit = Number(limit);
+//   const skip = (page - 1) * limit;
+
+//   /* ======================================================
+//      BUILD FILTER QUERY
+//   ====================================================== */
+//   const filter = {
+//     isActive: true,
+//   };
+
+//   /* ---------- SEARCH BY ACTIVITY NAME ---------- */
+//   if (search) {
+//     filter.name = { $regex: search, $options: "i" };
+//   }
+
+//   /* ======================================================
+//      CATEGORY FILTER (by category name)
+//   ====================================================== */
+//   if (category) {
+//     const categoryDoc = await Category.findOne({
+//       name: { $regex: `^${category}$`, $options: "i" },
+//     }).select("_id");
+
+//     if (!categoryDoc) {
+//       return successResponse(res, 200, "No activities found", {
+//         data: [],
+//         pagination: {
+//           total: 0,
+//           page,
+//           limit,
+//         },
+//       });
+//     }
+
+//     filter.categoryId = categoryDoc._id;
+//   }
+
+//   /* ======================================================
+//      PLACE FILTER (by region)
+//   ====================================================== */
+//   if (place) {
+//     const places = await Place.find({
+//       region: { $regex: place, $options: "i" },
+//     }).select("_id");
+
+//     if (!places.length) {
+//       return successResponse(res, 200, "No activities found", {
+//         data: [],
+//         pagination: {
+//           total: 0,
+//           page,
+//           limit,
+//         },
+//       });
+//     }
+
+//     filter.placeId = { $in: places.map((p) => p._id) };
+//   }
+
+//   /* ======================================================
+//      QUERY ACTIVITIES
+//   ====================================================== */
+//   const [activities, total] = await Promise.all([
+//     Activity.find(filter)
+//       .populate('placeId','name region')
+//       .select("-reviews") // optional: hide heavy fields
+//       .sort({ createdAt: -1 })
+//       .skip(skip)
+//       .limit(limit)
+//       .lean(),
+
+//     Activity.countDocuments(filter),
+//   ]);
+
+//   /* ======================================================
+//      RESPONSE
+//   ====================================================== */
+//   return successResponse(res, 200, "Activities fetched successfully", {
+//     data: activities,
+//     pagination: {
+//       total,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//     },
+//   });
+// });
+
+
+
 export const getAllActivity = asyncHandler(async (req, res, next) => {
-  let { page = 1, limit = 10, category, place, search } = req.query;
+  let { page = 1, limit = 10, categoryId, place, search } = req.query;
 
   page = Number(page);
   limit = Number(limit);
   const skip = (page - 1) * limit;
 
-  /* ======================================================
-     BUILD FILTER QUERY
-  ====================================================== */
   const filter = {
-    isActive: true,
-  };
+  isActive: true,
+};
 
-  /* ---------- SEARCH BY ACTIVITY NAME ---------- */
-  if (search) {
-    filter.name = { $regex: search, $options: "i" };
-  }
+/* SEARCH */
+if (search) {
+  filter.name = { $regex: search, $options: "i" };
+}
 
-  /* ======================================================
-     CATEGORY FILTER (by category name)
-  ====================================================== */
-  if (category) {
-    const categoryDoc = await Category.findOne({
-      name: { $regex: `^${category}$`, $options: "i" },
-    }).select("_id");
+/* CATEGORY */
+if (categoryId) {
+  filter.categoryId = categoryId;
+}
 
-    if (!categoryDoc) {
-      return successResponse(res, 200, "No activities found", {
-        data: [],
-        pagination: {
-          total: 0,
-          page,
-          limit,
-        },
-      });
-    }
-
-    filter.categoryId = categoryDoc._id;
-  }
+/* LOCATION (ID BASED 🔥) */
+if (place) {
+  filter.placeId = place;
+}
 
   /* ======================================================
      PLACE FILTER (by region)
   ====================================================== */
-  if (place) {
-    const places = await Place.find({
-      region: { $regex: place, $options: "i" },
-    }).select("_id");
+  // if (place) {
+  //   const places = await Place.find({
+  //     region: { $regex: place, $options: "i" },
+  //   }).select("_id");
 
-    if (!places.length) {
-      return successResponse(res, 200, "No activities found", {
-        data: [],
-        pagination: {
-          total: 0,
-          page,
-          limit,
-        },
-      });
-    }
+  //   if (!places.length) {
+  //     return successResponse(res, 200, "No activities found", {
+  //       data: [],
+  //       pagination: {
+  //         total: 0,
+  //         page,
+  //         limit,
+  //       },
+  //     });
+  //   }
 
-    filter.placeId = { $in: places.map((p) => p._id) };
-  }
-
-  /* ======================================================
-     QUERY ACTIVITIES
-  ====================================================== */
+  //   filter.placeId = { $in: places.map((p) => p._id) };
+  // }
   const [activities, total] = await Promise.all([
     Activity.find(filter)
-      .select("-reviews") // optional: hide heavy fields
+      // .populate("placeId", "name region")
+        .populate("placeId", "name region")
+    .populate("categoryId", "name image description")
+      .select("-reviews")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -704,10 +573,6 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
 
     Activity.countDocuments(filter),
   ]);
-
-  /* ======================================================
-     RESPONSE
-  ====================================================== */
   return successResponse(res, 200, "Activities fetched successfully", {
     data: activities,
     pagination: {
@@ -718,57 +583,6 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
     },
   });
 });
-
-/* ======================================================
-   PACKAGE CONTROLLERS
-====================================================== */
-
-export const createPackage = asyncHandler(async (req, res, next) => {
-  const {
-    activityId,
-    name,
-    price,
-    description,
-    whatInclude,
-    whatExclude,
-    bookingFields,
-    addons
-  } = req.body;
-
-  const activity = await Activity.findById(activityId);
-  if (!activity) {
-    return next(new ApiError("Activity not found", 400));
-  }
-  if (addons && addons.length) {
-    const uniqueAddons = new Set(addons);
-
-    if (uniqueAddons.size !== addons.length) {
-      return next(new ApiError("Duplicate addon ids are not allowed", 400));
-    }
-
-    const addonCount = await addonsModel.countDocuments({
-      _id: { $in: addons },
-    });
-
-    if (addonCount !== addons.length) {
-      return next(new ApiError("One or more addons are invalid", 400));
-    }
-  }
-
-  const pkg = await Package.create({
-    activityId,
-    name,
-    description,
-    price,
-    whatInclude,
-    whatExclude,
-    bookingFields: bookingFields || [],
-    addons: addons || [],
-  });
-
-  return successResponse(res, 200, "Package created successfully", pkg);
-});
-
 export const updatePackage = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
@@ -819,4 +633,127 @@ export const updatePackage = asyncHandler(async (req, res, next) => {
   await pkg.save();
 
   return successResponse(res, 200, "Package updated successfully", pkg);
+});
+
+export const getAllPackages = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 50 } = req.query;
+
+  const packages = await Package.find()
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(Number(limit))
+    .lean();
+
+  return successResponse(res, 200, "Packages fetched successfully", packages);
+});
+export const getPackagesByActivity = asyncHandler(async (req, res, next) => {
+  const { activityId } = req.params;
+
+  const packages = await Package.find({
+    activityId,
+    isActive: true,
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return successResponse(res, 200, "Packages fetched successfully", packages);
+});
+
+export const getPackageById = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const pkg = await Package.findById(id).lean();
+
+  if (!pkg) {
+    return next(new ApiError("Package not found", 404));
+  }
+
+  return successResponse(res, 200, "Package fetched successfully", pkg);
+});
+
+
+
+//top rated activities
+export const getTopSellingTours = asyncHandler(async (req, res, next) => {
+  const activities = await Activity.aggregate([
+    // 1. Only get active activities
+    { $match: { isActive: true } },
+
+    /* ---------- CALCULATE RATINGS ---------- */
+    {
+      $lookup: {
+        from: "reviews", // Check your DB, might be "review_maliks" if using your custom naming
+        localField: "_id", // Activity ID
+        foreignField: "activity", // The field name in your Review image
+        as: "reviewDetails",
+      },
+    },
+    {
+      $addFields: {
+        averageRating: { $ifNull: [{ $avg: "$reviewDetails.rating" }, 0] },
+        totalReviews: { $size: "$reviewDetails" },
+      },
+    },
+
+    /* ---------- GET MINIMUM PRICE FROM PACKAGES ---------- */
+    {
+      $lookup: {
+        from: "packages", 
+        localField: "_id",
+        foreignField: "activityId",
+        as: "packages",
+      },
+    },
+    {
+      $addFields: {
+        startingPrice: { $min: "$packages.price" },
+      },
+    },
+
+    /* ---------- GET PLACE INFO ---------- */
+    {
+      $lookup: {
+        from: "places", 
+        localField: "placeId",
+        foreignField: "_id",
+        as: "place",
+      },
+    },
+    { $unwind: { path: "$place", preserveNullAndEmptyArrays: true } },
+
+    /* ---------- GET CATEGORY INFO ---------- */
+    {
+      $lookup: {
+        from: "categories", 
+        localField: "categoryId",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+
+    /* ---------- SORT BY RATING ---------- */
+    { $sort: { averageRating: -1, totalReviews: -1 } },
+
+    /* ---------- LIMIT ---------- */
+    { $limit: 10 },
+
+    /* ---------- FINAL OBJECT MAPPING ---------- */
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        slug: 1,
+        // Get first image from array
+        image: { $arrayElemAt: ["$Images.secure_url", 0] }, 
+        rating: { $round: ["$averageRating", 1] },
+        reviewCount: "$totalReviews",
+        location: { $ifNull: ["$place.name", "N/A"] },
+        categoryName: { $ifNull: ["$category.name", "N/A"] },
+        startingPrice: { $ifNull: ["$startingPrice", 0] },
+      },
+    },
+  ]);
+
+  return successResponse(res, 200, "Top selling tours fetched", activities);
 });

@@ -4,7 +4,8 @@ const BookingFieldSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true, // e.g. "Adults", "Children", "Duration"
+      required: true,
+      trim: true,
     },
 
     unit: {
@@ -27,8 +28,17 @@ const BookingFieldSchema = new mongoose.Schema(
     },
     
 
-    min: Number, // minimum allowed value
-    max: Number, // maximum allowed value
+    min: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    max: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
 
     price: {
       type: Number,
@@ -57,37 +67,62 @@ const PackageSchema = new mongoose.Schema(
   {
     activityId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Activity",
+      ref: "Activity_Malik",
       required: true,
+      index: true,
     },
-    name: { type: String, required: true },
-    description: String,
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     price: {
       type: Number,
       required: true,
+      min: 0,
     },
 
-    addons:[
+    whatInclude: {
+      type: [String],
+      default: [],
+    },
+
+    whatExclude: {
+      type: [String],
+      default: [],
+    },
+
+    addons: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Addon",
-      }
+      },
     ],
 
-    whatInclude: [String],
-    whatExclude: [String],
-    /* ---------- STATUS ---------- */
+    bookingFields: {
+      type: [BookingFieldSchema],
+      default: [],
+    },
+
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
-    bookingFields: [BookingFieldSchema],
   },
-
   {
     timestamps: true,
   }
 );
 
-const  Package = mongoose.model("Package",PackageSchema);
+const Package = mongoose.model("Package", PackageSchema);
+
 export default Package;

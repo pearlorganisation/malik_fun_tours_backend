@@ -128,6 +128,14 @@ const BookingSchema = new mongoose.Schema(
       enum: ["pending", "paid", "failed"],
       default: "pending",
     },
+     date: {
+      type: Date,
+      required: true,
+    },
+    timeSlot: {
+      type: String, // e.g., "10:00 AM"
+      required: true,
+    },
 
     status: {
       type: String,

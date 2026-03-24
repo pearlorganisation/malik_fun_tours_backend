@@ -3,6 +3,7 @@ import {
   uploadFileToCloudinary,
   deleteFileFromCloudinary,
 } from "../configs/cloudinary.js";
+import mongoose from "mongoose";
 
 /* ================= CREATE SPOT ================= */
 export const createSpot = async (req, res) => {
@@ -24,6 +25,10 @@ export const createSpot = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "Image is required" });
     }
+
+    if (!mongoose.Types.ObjectId.isValid(category)) {
+  return res.status(400).json({ message: "Invalid category ID" });
+}
 
     const [image] = await uploadFileToCloudinary(req.file, "spots");
 
@@ -61,9 +66,9 @@ export const getAllSpots = async (req, res) => {
     // Build filter
     const filter = {};
 
-    if (category) {
-      filter.category = category;
-    }
+    if (category && mongoose.Types.ObjectId.isValid(category)) {
+  filter.category = category;
+}
 
     if (search) {
       filter.title = { $regex: search, $options: "i" }; // case-insensitive
@@ -72,6 +77,7 @@ export const getAllSpots = async (req, res) => {
     // Fetch spots
     const spots = await Spot.find(filter)
       .populate("whereToStay")
+      .populate("category", "name")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -101,7 +107,9 @@ export const getAllSpots = async (req, res) => {
 /* ================= GET SINGLE SPOT ================= */
 export const getSpotById = async (req, res) => {
   try {
-    const spot = await Spot.findById(req.params.id).populate("whereToStay");
+    const spot = await Spot.findById(req.params.id)
+    .populate("category", "name")
+    .populate("whereToStay")
 
     if (!spot) {
       return res.status(404).json({ message: "Spot not found" });
@@ -127,6 +135,10 @@ export const updateSpot = async (req, res) => {
       const [image] = await uploadFileToCloudinary(req.file, "spots");
       imageUrl = image.url;
     }
+
+    if (req.body.category && !mongoose.Types.ObjectId.isValid(req.body.category)) {
+  return res.status(400).json({ message: "Invalid category ID" });
+}
 
     const updatedSpot = await Spot.findByIdAndUpdate(
       req.params.id,

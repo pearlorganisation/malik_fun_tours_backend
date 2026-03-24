@@ -17,6 +17,7 @@ import spotRouter from "./src/routes/spot.routes.js";
 import placeRouter from "./src/routes/place.routes.js";
 import reviewRouter from "./src/routes/review.routes.js";
 import contactRouter from "./src/routes/contact.routes.js";
+import inquiryRoutes from "./src/routes/inquiry.routes.js";
 import orderRoute from "./src/routes/order.routes.js";
 configDotenv();
 
@@ -35,13 +36,14 @@ app.use(
             "http://localhost:3001",
             "https://malik-frontend-jshg.vercel.app",
             "https://malik-admin-panel.vercel.app",
+            "https://malik-frontend-lovat.vercel.app"
           ]
         : [
             "http://localhost:3000",
             "http://localhost:3001",
-            "https://malik-frontend-jhf8.vercel.app",
             "https://malik-admin-panel.vercel.app",
-            "https://malik-frontend-jshg.vercel.app/"
+            "https://malik-frontend-jshg.vercel.app",
+            "https://malik-frontend-lovat.vercel.app"
           ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Specify allowed HTTP methods
     allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
@@ -66,6 +68,7 @@ app.use(`/health`, async (req, res) => {
 
 /** declare our routes */
 
+app.use("/api/v1/inquiry", inquiryRoutes);
 app.use(`/api/v1/activity`, activityRouter);
 app.use(`/api/v1/auth`, authRouter);
 app.use(`/api/v1/user`, userRouter);

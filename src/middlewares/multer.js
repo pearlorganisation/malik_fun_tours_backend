@@ -45,7 +45,7 @@ export const upload = multer({
       "video/mp4",
       "video/quicktime",
     ];
-
+    
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error("Invalid file type"), false);
     }
