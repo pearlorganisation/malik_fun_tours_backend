@@ -513,66 +513,130 @@ export const createPackage = asyncHandler(async (req, res, next) => {
 
 
 
+// export const getAllActivity = asyncHandler(async (req, res, next) => {
+//   let { page = 1, limit = 10, categoryId, place, search } = req.query;
+
+//   page = Number(page);
+//   limit = Number(limit);
+//   const skip = (page - 1) * limit;
+
+//   const filter = {
+//   isActive: true,
+// };
+
+// /* SEARCH */
+// if (search) {
+//   filter.name = { $regex: search, $options: "i" };
+// }
+
+// /* CATEGORY */
+// if (categoryId) {
+//   filter.categoryId = categoryId;
+// }
+
+// /* LOCATION (ID BASED 🔥) */
+// if (place) {
+//   filter.placeId = place;
+// }
+
+//   /* ======================================================
+//      PLACE FILTER (by region)
+//   ====================================================== */
+//   // if (place) {
+//   //   const places = await Place.find({
+//   //     region: { $regex: place, $options: "i" },
+//   //   }).select("_id");
+
+//   //   if (!places.length) {
+//   //     return successResponse(res, 200, "No activities found", {
+//   //       data: [],
+//   //       pagination: {
+//   //         total: 0,
+//   //         page,
+//   //         limit,
+//   //       },
+//   //     });
+//   //   }
+
+//   //   filter.placeId = { $in: places.map((p) => p._id) };
+//   // }
+//   const [activities, total] = await Promise.all([
+//     Activity.find(filter)
+//       // .populate("placeId", "name region")
+//         .populate("placeId", "name region")
+//     .populate("categoryId", "name image description")
+//       .select("-reviews")
+//       .sort({ createdAt: -1 })
+//       .skip(skip)
+//       .limit(limit)
+//       .lean(),
+
+//     Activity.countDocuments(filter),
+//   ]);
+//   return successResponse(res, 200, "Activities fetched successfully", {
+//     data: activities,
+//     pagination: {
+//       total,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//     },
+//   });
+// });
+
+
 export const getAllActivity = asyncHandler(async (req, res, next) => {
-  let { page = 1, limit = 10, categoryId, place, search } = req.query;
+  let { 
+    page = 1, 
+    limit = 10, 
+    categoryId, 
+    place, 
+    search,
+    slug // ✅ NEW
+  } = req.query;
 
   page = Number(page);
   limit = Number(limit);
   const skip = (page - 1) * limit;
 
   const filter = {
-  isActive: true,
-};
+    isActive: true,
+  };
 
-/* SEARCH */
-if (search) {
-  filter.name = { $regex: search, $options: "i" };
-}
+  /* ================= SLUG (🔥 MAIN LOGIC) ================= */
+  if (slug) {
+    filter.slug = slug;
+  }
 
-/* CATEGORY */
-if (categoryId) {
-  filter.categoryId = categoryId;
-}
+  /* SEARCH */
+  if (search) {
+    filter.name = { $regex: search, $options: "i" };
+  }
 
-/* LOCATION (ID BASED 🔥) */
-if (place) {
-  filter.placeId = place;
-}
+  /* CATEGORY */
+  if (categoryId) {
+    filter.categoryId = categoryId;
+  }
 
-  /* ======================================================
-     PLACE FILTER (by region)
-  ====================================================== */
-  // if (place) {
-  //   const places = await Place.find({
-  //     region: { $regex: place, $options: "i" },
-  //   }).select("_id");
+  /* LOCATION */
+  if (place) {
+    filter.placeId = place;
+  }
 
-  //   if (!places.length) {
-  //     return successResponse(res, 200, "No activities found", {
-  //       data: [],
-  //       pagination: {
-  //         total: 0,
-  //         page,
-  //         limit,
-  //       },
-  //     });
-  //   }
-
-  //   filter.placeId = { $in: places.map((p) => p._id) };
-  // }
   const [activities, total] = await Promise.all([
     Activity.find(filter)
-      // .populate("placeId", "name region")
-        .populate("placeId", "name region")
-    .populate("categoryId", "name image description")
+      .populate("placeId", "name region")
+      .populate("categoryId", "name image description")
+      .populate({
+        path: "packages",
+        options: { sort: { price: 1 } }, // ✅ same detail jese getById
+      })
       .select("-reviews")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
       .lean(),
 
     Activity.countDocuments(filter),
   ]);
+
   return successResponse(res, 200, "Activities fetched successfully", {
     data: activities,
     pagination: {
