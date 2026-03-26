@@ -7,7 +7,7 @@ import { authenticateToken } from "../middlewares/authMiddleware.js";
 const orderRoute = express.Router()
 
 
-orderRoute.post("/create" , authenticateToken , createOrder)
+orderRoute.post("/create"  , createOrder)
 
 
 export default orderRoute;
