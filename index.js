@@ -18,6 +18,7 @@ import placeRouter from "./src/routes/place.routes.js";
 import reviewRouter from "./src/routes/review.routes.js";
 import contactRouter from "./src/routes/contact.routes.js";
 import inquiryRoutes from "./src/routes/inquiry.routes.js";
+import orderRoute from "./src/routes/order.routes.js";
 configDotenv();
 
 const stripe_parser = bodyParser.raw({ type: "application/json" });
@@ -77,6 +78,7 @@ app.use(`/api/v1/spots`, spotRouter);
 app.use(`/api/v1/places`, placeRouter);
 app.use(`/api/v1/reviews`, reviewRouter);
 app.use(`/api/v1/contact`, contactRouter);
+app.use(`/api/v1/order` , orderRoute)
 
 app.use(errorHandler);
 

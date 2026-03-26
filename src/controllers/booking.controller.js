@@ -91,75 +91,44 @@ export const confirmPayment = async (req, res) => {
 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-        isPaid: false,
-      });
+      return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
     // 🔒 Ownership check
-    console.log(booking);
-    console.log("Booking User ID:", booking.user.toString());
-    console.log("Request Use", req.user);
     if (!req.user || booking.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized access",
-        isPaid: false,
+      return res.status(403).json({ success: false, message: "Unauthorized access" });
+    }
+
+    // 🔁 Check if already paid
+    if (booking.paymentStatus === "paid") {
+      return res.status(200).json({ success: true, message: "Already confirmed", isPaid: true });
+    }
+
+    if (!booking.paymentIntentId) {
+      return res.status(400).json({ success: false, message: "No payment intent found" });
+    }
+
+    // Retrieve the PaymentIntent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(booking.paymentIntentId);
+
+    // 🔐 Verification
+    // 1. Check if payment succeeded in Stripe
+    if (paymentIntent.status !== "succeeded") {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Payment status is: ${paymentIntent.status}`,
+        isPaid: false 
       });
     }
 
-    // 🔁 Idempotent
-    if (booking.status === "paid") {
-      return res.status(200).json({
-        success: true,
-        message: "Already confirmed",
-        isPaid: true,
-      });
+    // 2. Amount verification (Ensure the amount paid matches the booking)
+    if (paymentIntent.amount !== Math.round(booking.totalAmount * 100)) {
+      return res.status(400).json({ success: false, message: "Amount mismatch" });
     }
 
-    if (!booking.checkoutSessionId) {
-      return res.status(400).json({
-        success: false,
-        message: "No checkout session found",
-        isPaid: false,
-      });
-    }
-
-    const session = await stripe.checkout.sessions.retrieve(
-      booking.checkoutSessionId,
-      { expand: ["payment_intent"] }
-    );
-
-    // 🔐 Metadata validation
-    if (session.metadata?.bookingId !== booking._id.toString()) {
-      return res.status(400).json({
-        success: false,
-        message: "Session mismatch",
-        isPaid: false,
-      });
-    }
-
-    if (session.payment_status !== "paid") {
-      return res.status(400).json({
-        success: false,
-        message: "Payment not completed",
-        isPaid: false,
-      });
-    }
-
-    if (session.amount_total !== Math.round(booking.totalAmount * 100)) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount mismatch",
-        isPaid: false,
-      });
-    }
-
-    booking.status = "paid";
-    booking.paymentIntentId = session.payment_intent.id;
-    booking.paidAt = new Date();
+    // Update database
+    booking.paymentStatus = "paid";
+    booking.status = "confirmed"; // Matches your schema
     await booking.save();
 
     res.status(200).json({
@@ -168,15 +137,10 @@ export const confirmPayment = async (req, res) => {
       isPaid: true,
     });
   } catch (error) {
-    console.log("Error in confirmPayment:", error);
-    res.status(500).json({
-      success: false,
-      message: "Payment verification failed",
-      isPaid: false,
-    });
+    console.error("Error in confirmPayment:", error);
+    res.status(500).json({ success: false, message: "Payment verification failed" });
   }
 };
-
 // Add this to your booking controller file
 
 export const getMyBookings = async (req, res) => {

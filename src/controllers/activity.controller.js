@@ -329,9 +329,13 @@ export const createPackage = asyncHandler(async (req, res, next) => {
       whatInclude = [],
       whatExclude = [],
       bookingFields = [],
-      addons = [],
+      // addons = [],
       isActive = true,
     } = req.body;
+    const addons = [
+  "65f1a2b3c4d5e6f7890a1111",
+  "65f1a2b3c4d5e6f7890a2222"
+];
 
     if (!activityId || !name || price === undefined) {
       throw new ApiError("activityId, name and price are required", 400);
@@ -344,22 +348,22 @@ export const createPackage = asyncHandler(async (req, res, next) => {
     }
 
 
-    if (addons.length) {
+    // if (addons.length) {
 
-      const uniqueAddons = [...new Set(addons)];
+    //   const uniqueAddons = [...new Set(addons)];
 
-      if (uniqueAddons.length !== addons.length) {
-        throw new ApiError("Duplicate addon ids are not allowed", 400);
-      }
+    //   if (uniqueAddons.length !== addons.length) {
+    //     throw new ApiError("Duplicate addon ids are not allowed", 400);
+    //   }
 
-      const addonCount = await addonsModel
-        .countDocuments({ _id: { $in: uniqueAddons } })
-        .session(session);
+    //   const addonCount = await addonsModel
+    //     .countDocuments({ _id: { $in: uniqueAddons } })
+    //     .session(session);
 
-      if (addonCount !== uniqueAddons.length) {
-        throw new ApiError("Invalid addon ids", 400);
-      }
-    }
+    //   if (addonCount !== uniqueAddons.length) {
+    //     throw new ApiError("Invalid addon ids", 400);
+    //   }
+    // }
 
 
     const sanitizedBookingFields = bookingFields.map(field => {
@@ -368,13 +372,29 @@ export const createPackage = asyncHandler(async (req, res, next) => {
         throw new ApiError("Booking field name required", 400);
       }
 
+      // return {
+      //   name: field.name.trim(),
+      //   unit: field.unit || "quantity",
+      //   min: Math.max(Number(field.min) || 0, 0),
+      //   max: Math.max(Number(field.max) || 0, 0),
+      //   price: Math.max(Number(field.price) || 0, 0)
+      // };
       return {
-        name: field.name.trim(),
-        unit: field.unit || "quantity",
-        min: Math.max(Number(field.min) || 0, 0),
-        max: Math.max(Number(field.max) || 0, 0),
-        price: Math.max(Number(field.price) || 0, 0)
-      };
+  name: field.name.trim(),
+  unit: field.unit || "quantity",
+
+  seat: field.unit === "quantity"
+    ? Math.max(Number(field.seat) || 0, 0)
+    : undefined,
+
+  duration: field.unit === "minute"
+    ? Math.max(Number(field.duration) || 0, 0)
+    : undefined,
+
+  min: Math.max(Number(field.min) || 0, 0),
+  max: Math.max(Number(field.max) || 0, 0),
+  price: Math.max(Number(field.price) || 0, 0)
+};
 
     });
 

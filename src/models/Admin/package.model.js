@@ -9,10 +9,24 @@ const BookingFieldSchema = new mongoose.Schema(
     },
 
     unit: {
-      type: String,
-      enum: ["minute", "quantity"],
-      default: "quantity",
+      type:String,
+      required:true,
+      enum:["minute","quantity"]
     },
+    seat :{
+      type : Number,
+      required: function () {
+      return this.unit === "quantity";
+    },
+    },
+
+    duration :{
+      type : Number,
+       required: function () {
+        return this.unit === "minute"; 
+      },
+    },
+    
 
     min: {
       type: Number,
@@ -28,13 +42,27 @@ const BookingFieldSchema = new mongoose.Schema(
 
     price: {
       type: Number,
-      default: 0,
-      min: 0,
     },
+
   },
-  { _id: false }
+  // { _id: false }
 );
 
+// const BookingFieldSchema = new mongoose.Schema({
+//   name: { type: String, required: true },
+//   unit: { type: String, enum: ["minute", "quantity"] },
+//   groupType: { 
+//     type: String, 
+//     enum: ["independent", "vessel", "duration"], 
+//     default: "independent" 
+//   },
+//   isPassenger: { type: Boolean, default: false }, // Use this to identify who sits in the SUV
+//   price: { type: Number, default: 0 },            // Price for extra units
+//   min: { type: Number, default: 0 },              // Minimum requirement
+//   max: { type: Number },                          // Maximum requirement
+//   includedQuantity: { type: Number, default: 0 }, // How many are INCLUDED in base price
+//   duration: Number                                // Only for "minute" units
+// });
 const PackageSchema = new mongoose.Schema(
   {
     activityId: {
