@@ -13,6 +13,97 @@ import ApiError from "../utils/error/ApiError.js";
 import successResponse from "../utils/error/successResponse.js";
 import addonsModel from "../models/Admin/addons.model.js";
 
+// export const createActivity = asyncHandler(async (req, res, next) => {
+//   const {
+//     name,
+//     categoryId,
+//     placeId,
+//     Experience,
+//     Itinerary,
+//     InfoAndLogistics,
+//     BBQ_BUFFET,
+//     PrivateSUV,
+//     timeSlots
+//   } = req.body;
+
+//   /* ---------- PARSE JSON SAFELY ---------- */
+
+//   let activityData;
+
+//   try {
+//     activityData = {
+//       name,
+//       categoryId,
+//       placeId,
+//       Experience: Experience ? JSON.parse(Experience) : {},
+//       Itinerary: Itinerary ? JSON.parse(Itinerary) : [],
+//       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
+//       BBQ_BUFFET: BBQ_BUFFET ? JSON.parse(BBQ_BUFFET) : null,
+//       PrivateSUV: PrivateSUV ? JSON.parse(PrivateSUV) : null,
+//       timeSlots: timeSlots? JSON.parse(timeSlots):null,
+//     };
+//   } catch (error) {
+//     return next(new ApiError("Invalid JSON format in request body", 400));
+//   }
+
+//   /* ---------- UPLOAD IMAGES ---------- */
+
+//   let Images = [];
+//   let Video = {};
+
+//   if (req.files?.images?.length) {
+//     const uploaded = await uploadFileToCloudinary(
+//       req.files.images,
+//       "activities/images"
+//     );
+
+//     Images = uploaded.map((img) => ({
+//       secure_url: img.url,
+//       public_id: img.public_id,
+//     }));
+//   }
+//   activityData.Images = Images;
+
+//   if (req.files?.video) {
+//     const uploaded = await uploadFileToCloudinary(
+//       req.files.video,
+//       "activities/video"
+//     );
+
+//     Video = {
+//       secure_url: uploaded[0].url,
+//       public_id: uploaded[0].public_id,
+//     };
+//   }
+//   activityData.Video = Video;
+
+//   /* ---------- SLUG ---------- */
+
+//   const slug = slugify(name, { lower: true, strict: true });
+
+//   const exists = await Activity.findOne({ slug });
+
+//   if (exists) {
+//     return next(new ApiError("Activity already exists with this name", 400));
+//   }
+
+//   activityData.slug = slug;
+
+//   /* ---------- CREATE ACTIVITY ---------- */
+
+//   const activity = await Activity.create(activityData);
+
+//   /* ---------- SUCCESS RESPONSE ---------- */
+
+//   return successResponse(res, 201, "Activity created successfully", activity);
+// });
+
+
+// Backend Controller: createActivity
+
+// Import required models at the top if you haven't (Package model is needed to save packages)
+// import Package from "../models/packageModel.js"; 
+
 export const createActivity = asyncHandler(async (req, res, next) => {
   const {
     name,
@@ -23,13 +114,16 @@ export const createActivity = asyncHandler(async (req, res, next) => {
     InfoAndLogistics,
     BBQ_BUFFET,
     PrivateSUV,
-    timeSlots
+    timeSlots,
+    existingImages, // FIX: Frontend se aa rahi existing images
+    existingVideo,  // FIX: Frontend se aa rahi existing video
+    packages,       // FIX: Frontend se aa rahe packages
+    packageCount,
+    isActive
   } = req.body;
 
   /* ---------- PARSE JSON SAFELY ---------- */
-
   let activityData;
-
   try {
     activityData = {
       name,
@@ -40,64 +134,145 @@ export const createActivity = asyncHandler(async (req, res, next) => {
       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
       BBQ_BUFFET: BBQ_BUFFET ? JSON.parse(BBQ_BUFFET) : null,
       PrivateSUV: PrivateSUV ? JSON.parse(PrivateSUV) : null,
-      timeSlots: timeSlots? JSON.parse(timeSlots):null,
+      timeSlots: timeSlots ? JSON.parse(timeSlots) : [],
+      isActive: isActive === 'true' || isActive === true
     };
   } catch (error) {
     return next(new ApiError("Invalid JSON format in request body", 400));
   }
 
-  /* ---------- UPLOAD IMAGES ---------- */
+  /* ---------- HANDLE IMAGES & VIDEO ---------- */
+  // 1. Pehle purani (existing) images & video ko activity array mein daalein
+  let Images = existingImages ? JSON.parse(existingImages) : [];
+  let Video = existingVideo ? JSON.parse(existingVideo) : null;
 
-  let Images = [];
-  let Video = {};
-
+  // 2. Phir agar koi nayi file aayi hai toh use Cloudinary par upload karein aur add karein
   if (req.files?.images?.length) {
-    const uploaded = await uploadFileToCloudinary(
-      req.files.images,
-      "activities/images"
-    );
-
-    Images = uploaded.map((img) => ({
+    const uploaded = await uploadFileToCloudinary(req.files.images, "activities/images");
+    const newImages = uploaded.map((img) => ({
       secure_url: img.url,
       public_id: img.public_id,
     }));
+    Images = [...Images, ...newImages]; // Purani + Nayi images
   }
   activityData.Images = Images;
 
   if (req.files?.video) {
-    const uploaded = await uploadFileToCloudinary(
-      req.files.video,
-      "activities/video"
-    );
-
+    const uploaded = await uploadFileToCloudinary(req.files.video, "activities/video");
     Video = {
       secure_url: uploaded[0].url,
       public_id: uploaded[0].public_id,
     };
   }
-  activityData.Video = Video;
+  if (Video) activityData.Video = Video;
 
-  /* ---------- SLUG ---------- */
-
+  /* ---------- SLUG CHECK ---------- */
   const slug = slugify(name, { lower: true, strict: true });
-
   const exists = await Activity.findOne({ slug });
-
   if (exists) {
     return next(new ApiError("Activity already exists with this name", 400));
   }
-
   activityData.slug = slug;
 
   /* ---------- CREATE ACTIVITY ---------- */
-
   const activity = await Activity.create(activityData);
 
-  /* ---------- SUCCESS RESPONSE ---------- */
+  /* ---------- SAVE PACKAGES (VARIANTS) ---------- */
+  // Kyunki Package aapka alag collection me hai
+  if (packages) {
+    const parsedPackages = JSON.parse(packages);
+    if (parsedPackages.length > 0) {
+      // Har package ke andar uss activity ka ID set karein
+      // const packagesToSave = parsedPackages.map(pkg => ({
+      //   ...pkg,
+      //   activityId: activity._id,
+      //   // Yahan par aapki backend zaroorat ke hisaab se bookingFields map kar sakte hain
+      //   bookingFields: pkg.pricing ? pkg.pricing.map(p => ({
+      //     name: p.label,
+      //     price: p.price,
+      //     unit: p.unit || "quantity",
+      //     min: p.min || 1,
+      //     max: p.max || 20
+      //   })) : []
+      // }));
+//       const packagesToSave = parsedPackages.map(pkg => ({
+//   activityId: activity._id,
+//   name: pkg.name,
+//   description: pkg.description,
 
+//   // 🔥 IMPORTANT FIX
+//   price: pkg.pricing?.[0]?.price || 0, // REQUIRED field
+
+//   whatInclude: pkg.includes || [],
+//   whatExclude: pkg.excludes || [],
+
+//   addons: pkg.addons || [],
+
+//   bookingFields: pkg.pricing
+//     ? pkg.pricing.map(p => ({
+//         name: p.label,
+//         price: p.price,
+//         unit: p.unit || "quantity",
+//         min: p.min || 1,
+//         max: p.max || 20,
+//       }))
+//     : [],
+
+//   isActive: pkg.isActive ?? true,
+// }));
+const packagesToSave = parsedPackages.map(pkg => {
+  // Extract price from pricing array OR direct package price
+  let packagePrice = 0;
+  if (pkg.pricing && pkg.pricing.length > 0) {
+    packagePrice = pkg.pricing[0].price || 0;
+  } else if (pkg.price !== undefined) {
+    packagePrice = pkg.price;
+  }
+
+  return {
+    activityId: activity._id,
+    name: pkg.name || "Unnamed Package",
+    description: pkg.description || "",
+    price: packagePrice, // Guaranteed to be a number
+    whatInclude: pkg.includes || [],
+    whatExclude: pkg.excludes || [],
+    addons: pkg.addons || [],
+    bookingFields: pkg.pricing
+      ? pkg.pricing.map(p => ({
+          name: p.label || p.name || "Item",
+          price: p.price || 0,
+          unit: p.unit || "quantity",
+          seat: p.seat || 0,
+          min: p.min || 0,
+          max: p.max || 20,
+        }))
+      : [],
+    isActive: pkg.isActive ?? true,
+  };
+});
+      // Assumes you have imported the Package model at the top of the file
+      // If you haven't, you need to import it: import Package from "../models/packageModel.js";
+      try {
+        const mongoose = await import("mongoose");
+        const PackageModel = mongoose.model("Package"); // Ya fir direct import wala Package
+        await PackageModel.insertMany(packagesToSave);
+        // activity.packageCount will automatically increment or you can do it manually:
+        // await Activity.findByIdAndUpdate(activity._id, { packageCount: packagesToSave.length });
+        await Activity.findByIdAndUpdate(
+  activity._id,
+  { packageCount: packagesToSave.length },
+  { new: true }
+);
+      } catch (pkgErr) {
+         console.error("🔥 Error saving packages during duplicate:", pkgErr); // Check your terminal logs!
+        // Not failing the whole request just because packages failed
+      }
+    }
+  }
+
+  /* ---------- SUCCESS RESPONSE ---------- */
   return successResponse(res, 201, "Activity created successfully", activity);
 });
-
 export const updateActivity = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
@@ -310,7 +485,11 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
     });
   }
 
-  return successResponse(res, 200, "Activity found ", activity);
+  // return successResponse(res, 200, "Activity found ", activity);
+  const activityObj = activity.toObject();
+activityObj.packageCount = activity.packages?.length || 0;
+
+return successResponse(res, 200, "Activity found", activityObj);
 });
 
 export const createPackage = asyncHandler(async (req, res, next) => {
@@ -840,4 +1019,53 @@ export const getTopSellingTours = asyncHandler(async (req, res, next) => {
   ]);
 
   return successResponse(res, 200, "Top selling tours fetched", activities);
+});
+
+
+
+export const deleteActivity = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  /* ---------- VALIDATION ---------- */
+  if (!id) {
+    return next(new ApiError("Activity id required", 400));
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ApiError("Invalid Activity ID", 400));
+  }
+
+  /* ---------- FIND ACTIVITY ---------- */
+  const activity = await Activity.findById(id);
+
+  if (!activity) {
+    return next(new ApiError("Activity not found", 404));
+  }
+
+  /* ======================================================
+      DELETE IMAGES FROM CLOUDINARY
+  ====================================================== */
+  if (activity.Images?.length) {
+    const publicIds = activity.Images.map((img) => img.public_id);
+    await deleteFileFromCloudinary(publicIds);
+  }
+
+  /* ======================================================
+      DELETE VIDEO FROM CLOUDINARY
+  ====================================================== */
+  if (activity.Video?.public_id) {
+    await deleteFileFromCloudinary(activity.Video.public_id);
+  }
+
+  /* ======================================================
+      DELETE RELATED PACKAGES
+  ====================================================== */
+  await Package.deleteMany({ activityId: id });
+
+  /* ======================================================
+      DELETE ACTIVITY
+  ====================================================== */
+  await Activity.findByIdAndDelete(id);
+
+  return successResponse(res, 200, "Activity deleted successfully");
 });

@@ -18,7 +18,8 @@ import {
   getAllPackages,
   getPackagesByActivity,
   getPackageById,
-  getTopSellingTours
+  getTopSellingTours,
+  deleteActivity 
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
 import {
@@ -56,7 +57,7 @@ router.put(
   // validateRequest,
   updateActivity
 );
-
+router.delete("/:id", deleteActivity);
 router.patch("/toggle/:id", toggleActivityStatusById);
 router.get("/get-activity/:id", getActivityById);
 router.get("/search", getAllActivity);
