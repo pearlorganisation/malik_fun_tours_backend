@@ -19,6 +19,8 @@ import reviewRouter from "./src/routes/review.routes.js";
 import contactRouter from "./src/routes/contact.routes.js";
 import inquiryRoutes from "./src/routes/inquiry.routes.js";
 import orderRoute from "./src/routes/order.routes.js";
+import itineraryRoute from "./src/routes/itinerary.routes.js";
+
 configDotenv();
 
 const stripe_parser = bodyParser.raw({ type: "application/json" });
@@ -69,6 +71,8 @@ app.use(`/health`, async (req, res) => {
 /** declare our routes */
 
 app.use("/api/v1/inquiry", inquiryRoutes);
+app.use("/api/v1/itinerary", itineraryRoute);
+
 app.use(`/api/v1/activity`, activityRouter);
 app.use(`/api/v1/auth`, authRouter);
 app.use(`/api/v1/user`, userRouter);
