@@ -105,6 +105,8 @@ export const createActivity = asyncHandler(async (req, res, next) => {
     name,
     categoryId,
     placeId,
+    sourceActivityId,
+    activityId,
     Experience,
     Itinerary,
     InfoAndLogistics,
@@ -124,6 +126,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
       name,
       categoryId,
       placeId,
+     sourceActivityId:activityId || sourceActivityId || null,
       Experience: Experience ? JSON.parse(Experience) : {},
       Itinerary: Itinerary ? JSON.parse(Itinerary) : [],
       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
@@ -223,6 +226,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
 
   return successResponse(res, 201, "Activity created successfully", activity);
 });
+
 export const updateActivity = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
@@ -380,6 +384,7 @@ activity.Video = null;
   return successResponse(res, 200, "Activity updated successfully", activity);
 });
 
+
 export const toggleActivityStatusById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
@@ -409,6 +414,7 @@ export const toggleActivityStatusById = asyncHandler(async (req, res, next) => {
     activity
   );
 });
+
 
 export const getActivityById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
