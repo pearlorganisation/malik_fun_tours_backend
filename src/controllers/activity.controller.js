@@ -13,6 +13,93 @@ import ApiError from "../utils/error/ApiError.js";
 import successResponse from "../utils/error/successResponse.js";
 import addonsModel from "../models/Admin/addons.model.js";
 
+// export const createActivity = asyncHandler(async (req, res, next) => {
+//   const {
+//     name,
+//     categoryId,
+//     placeId,
+//     Experience,
+//     Itinerary,
+//     InfoAndLogistics,
+//     BBQ_BUFFET,
+//     PrivateSUV,
+//     timeSlots
+//   } = req.body;
+
+//   /* ---------- PARSE JSON SAFELY ---------- */
+
+//   let activityData;
+
+//   try {
+//     activityData = {
+//       name,
+//       categoryId,
+//       placeId,
+//       Experience: Experience ? JSON.parse(Experience) : {},
+//       Itinerary: Itinerary ? JSON.parse(Itinerary) : [],
+//       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
+//       BBQ_BUFFET: BBQ_BUFFET ? JSON.parse(BBQ_BUFFET) : null,
+//       PrivateSUV: PrivateSUV ? JSON.parse(PrivateSUV) : null,
+//       timeSlots: timeSlots? JSON.parse(timeSlots):null,
+//     };
+//   } catch (error) {
+//     return next(new ApiError("Invalid JSON format in request body", 400));
+//   }
+
+//   /* ---------- UPLOAD IMAGES ---------- */
+
+//   let Images = [];
+//   let Video = {};
+
+//   if (req.files?.images?.length) {
+//     const uploaded = await uploadFileToCloudinary(
+//       req.files.images,
+//       "activities/images"
+//     );
+
+//     Images = uploaded.map((img) => ({
+//       secure_url: img.url,
+//       public_id: img.public_id,
+//     }));
+//   }
+//   activityData.Images = Images;
+
+//   if (req.files?.video) {
+//     const uploaded = await uploadFileToCloudinary(
+//       req.files.video,
+//       "activities/video"
+//     );
+
+//     Video = {
+//       secure_url: uploaded[0].url,
+//       public_id: uploaded[0].public_id,
+//     };
+//   }
+//   activityData.Video = Video;
+
+//   /* ---------- SLUG ---------- */
+
+//   const slug = slugify(name, { lower: true, strict: true });
+
+//   const exists = await Activity.findOne({ slug });
+
+//   if (exists) {
+//     return next(new ApiError("Activity already exists with this name", 400));
+//   }
+
+//   activityData.slug = slug;
+
+//   /* ---------- CREATE ACTIVITY ---------- */
+
+//   const activity = await Activity.create(activityData);
+
+//   /* ---------- SUCCESS RESPONSE ---------- */
+
+//   return successResponse(res, 201, "Activity created successfully", activity);
+// });
+
+
+
 export const createActivity = asyncHandler(async (req, res, next) => {
   const {
     name,
@@ -23,12 +110,14 @@ export const createActivity = asyncHandler(async (req, res, next) => {
     InfoAndLogistics,
     BBQ_BUFFET,
     PrivateSUV,
-    timeSlots
+    timeSlots,
+    existingImages,
+    existingVideo,
+    packages
   } = req.body;
 
   /* ---------- PARSE JSON SAFELY ---------- */
-
-  let activityData;
+  let activityData = {};
 
   try {
     activityData = {
@@ -40,64 +129,100 @@ export const createActivity = asyncHandler(async (req, res, next) => {
       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
       BBQ_BUFFET: BBQ_BUFFET ? JSON.parse(BBQ_BUFFET) : null,
       PrivateSUV: PrivateSUV ? JSON.parse(PrivateSUV) : null,
-      timeSlots: timeSlots? JSON.parse(timeSlots):null,
+      timeSlots: timeSlots ? JSON.parse(timeSlots) : [],
     };
   } catch (error) {
-    return next(new ApiError("Invalid JSON format in request body", 400));
+    return next(new ApiError("Invalid JSON format", 400));
   }
 
-  /* ---------- UPLOAD IMAGES ---------- */
+  /* ---------- HANDLE IMAGES ---------- */
 
-  let Images = [];
-  let Video = {};
+  let finalImages = [];
 
+  // 1. Existing Images (duplicate case)
+  if (existingImages) {
+    try {
+      const parsedExisting = JSON.parse(existingImages);
+      finalImages.push(...parsedExisting);
+    } catch (err) {
+      console.log("Error parsing existingImages");
+    }
+  }
+
+  // 2. New Uploaded Images
   if (req.files?.images?.length) {
     const uploaded = await uploadFileToCloudinary(
       req.files.images,
       "activities/images"
     );
 
-    Images = uploaded.map((img) => ({
+    const newImgs = uploaded.map((img) => ({
       secure_url: img.url,
       public_id: img.public_id,
     }));
-  }
-  activityData.Images = Images;
 
+    finalImages.push(...newImgs);
+  }
+
+  activityData.Images = finalImages;
+
+  /* ---------- HANDLE VIDEO ---------- */
+
+  let finalVideo = null;
+
+  // Existing video (duplicate case)
+  if (existingVideo) {
+    try {
+      finalVideo = JSON.parse(existingVideo);
+    } catch (err) {
+      console.log("Error parsing existingVideo");
+    }
+  }
+
+  // New uploaded video overrides existing
   if (req.files?.video) {
     const uploaded = await uploadFileToCloudinary(
       req.files.video,
       "activities/video"
     );
 
-    Video = {
+    finalVideo = {
       secure_url: uploaded[0].url,
       public_id: uploaded[0].public_id,
     };
   }
-  activityData.Video = Video;
+
+  if (finalVideo) {
+    activityData.Video = finalVideo;
+  }
+
+  /* ---------- PACKAGE COUNT ---------- */
+  if (packages) {
+    try {
+      const parsedPackages = JSON.parse(packages);
+      activityData.packageCount = parsedPackages.length || 0;
+    } catch {
+      activityData.packageCount = 0;
+    }
+  } else {
+    activityData.packageCount = 0;
+  }
 
   /* ---------- SLUG ---------- */
-
   const slug = slugify(name, { lower: true, strict: true });
 
   const exists = await Activity.findOne({ slug });
-
   if (exists) {
     return next(new ApiError("Activity already exists with this name", 400));
   }
 
   activityData.slug = slug;
 
-  /* ---------- CREATE ACTIVITY ---------- */
-
+  /* ---------- CREATE ---------- */
   const activity = await Activity.create(activityData);
-
-  /* ---------- SUCCESS RESPONSE ---------- */
 
   return successResponse(res, 201, "Activity created successfully", activity);
 });
-
 export const updateActivity = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
