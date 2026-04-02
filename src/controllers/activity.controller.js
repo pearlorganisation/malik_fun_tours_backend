@@ -1069,3 +1069,30 @@ export const deleteActivity = asyncHandler(async (req, res, next) => {
 
   return successResponse(res, 200, "Activity deleted successfully");
 });
+
+// DELETE PACKAGE
+export const deletePackage = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ApiError("Invalid Package ID", 400));
+  }
+
+  const pkg = await Package.findById(id);
+  
+  if (!pkg) {
+    return next(new ApiError("Package not found", 404));
+  }
+
+  const activityId = pkg.activityId;
+
+  // Package delete karein
+  await Package.findByIdAndDelete(id);
+
+  // Activity ka packageCount minus karein
+  await Activity.findByIdAndUpdate(activityId, {
+    $inc: { packageCount: -1 }
+  });
+
+  return successResponse(res, 200, "Package deleted successfully");
+});
