@@ -15,6 +15,12 @@ const ActivitySchema = new mongoose.Schema(
       lowercase: true,
       index: true,
     },
+    sourceActivityId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Activity_Malik",
+  required: false,
+  default: null,
+},
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",

@@ -99,22 +99,28 @@ import addonsModel from "../models/Admin/addons.model.js";
 // });
 
 
+<<<<<<< HEAD
 // Backend Controller: createActivity
 
 // Import required models at the top if you haven't (Package model is needed to save packages)
 // import Package from "../models/packageModel.js"; 
+=======
+>>>>>>> nitin-code
 
 export const createActivity = asyncHandler(async (req, res, next) => {
   const {
     name,
     categoryId,
     placeId,
+    sourceActivityId,
+    activityId,
     Experience,
     Itinerary,
     InfoAndLogistics,
     BBQ_BUFFET,
     PrivateSUV,
     timeSlots,
+<<<<<<< HEAD
     existingImages, // FIX: Frontend se aa rahi existing images
     existingVideo,  // FIX: Frontend se aa rahi existing video
     packages,       // FIX: Frontend se aa rahe packages
@@ -124,23 +130,38 @@ export const createActivity = asyncHandler(async (req, res, next) => {
 
   /* ---------- PARSE JSON SAFELY ---------- */
   let activityData;
+=======
+    existingImages,
+    existingVideo,
+    packages
+  } = req.body;
+
+  /* ---------- PARSE JSON SAFELY ---------- */
+  let activityData = {};
+
+>>>>>>> nitin-code
   try {
     activityData = {
       name,
       categoryId,
       placeId,
+     sourceActivityId:activityId || sourceActivityId || null,
       Experience: Experience ? JSON.parse(Experience) : {},
       Itinerary: Itinerary ? JSON.parse(Itinerary) : [],
       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
       BBQ_BUFFET: BBQ_BUFFET ? JSON.parse(BBQ_BUFFET) : null,
       PrivateSUV: PrivateSUV ? JSON.parse(PrivateSUV) : null,
       timeSlots: timeSlots ? JSON.parse(timeSlots) : [],
+<<<<<<< HEAD
       isActive: isActive === 'true' || isActive === true
+=======
+>>>>>>> nitin-code
     };
   } catch (error) {
-    return next(new ApiError("Invalid JSON format in request body", 400));
+    return next(new ApiError("Invalid JSON format", 400));
   }
 
+<<<<<<< HEAD
   /* ---------- HANDLE IMAGES & VIDEO ---------- */
   // 1. Pehle purani (existing) images & video ko activity array mein daalein
   let Images = existingImages ? JSON.parse(existingImages) : [];
@@ -156,17 +177,93 @@ export const createActivity = asyncHandler(async (req, res, next) => {
     Images = [...Images, ...newImages]; // Purani + Nayi images
   }
   activityData.Images = Images;
+=======
+  /* ---------- HANDLE IMAGES ---------- */
 
+  let finalImages = [];
+
+  // 1. Existing Images (duplicate case)
+  if (existingImages) {
+    try {
+      const parsedExisting = JSON.parse(existingImages);
+      finalImages.push(...parsedExisting);
+    } catch (err) {
+      console.log("Error parsing existingImages");
+    }
+  }
+
+  // 2. New Uploaded Images
+  if (req.files?.images?.length) {
+    const uploaded = await uploadFileToCloudinary(
+      req.files.images,
+      "activities/images"
+    );
+
+    const newImgs = uploaded.map((img) => ({
+      secure_url: img.url,
+      public_id: img.public_id,
+    }));
+>>>>>>> nitin-code
+
+    finalImages.push(...newImgs);
+  }
+
+  activityData.Images = finalImages;
+
+  /* ---------- HANDLE VIDEO ---------- */
+
+  let finalVideo = null;
+
+  // Existing video (duplicate case)
+  if (existingVideo) {
+    try {
+      finalVideo = JSON.parse(existingVideo);
+    } catch (err) {
+      console.log("Error parsing existingVideo");
+    }
+  }
+
+  // New uploaded video overrides existing
   if (req.files?.video) {
+<<<<<<< HEAD
     const uploaded = await uploadFileToCloudinary(req.files.video, "activities/video");
     Video = {
+=======
+    const uploaded = await uploadFileToCloudinary(
+      req.files.video,
+      "activities/video"
+    );
+
+    finalVideo = {
+>>>>>>> nitin-code
       secure_url: uploaded[0].url,
       public_id: uploaded[0].public_id,
     };
   }
+<<<<<<< HEAD
   if (Video) activityData.Video = Video;
 
   /* ---------- SLUG CHECK ---------- */
+=======
+
+  if (finalVideo) {
+    activityData.Video = finalVideo;
+  }
+
+  /* ---------- PACKAGE COUNT ---------- */
+  if (packages) {
+    try {
+      const parsedPackages = JSON.parse(packages);
+      activityData.packageCount = parsedPackages.length || 0;
+    } catch {
+      activityData.packageCount = 0;
+    }
+  } else {
+    activityData.packageCount = 0;
+  }
+
+  /* ---------- SLUG ---------- */
+>>>>>>> nitin-code
   const slug = slugify(name, { lower: true, strict: true });
   const exists = await Activity.findOne({ slug });
   if (exists) {
@@ -174,6 +271,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
   }
   activityData.slug = slug;
 
+<<<<<<< HEAD
   /* ---------- CREATE ACTIVITY ---------- */
   const activity = await Activity.create(activityData);
 
@@ -271,6 +369,11 @@ const packagesToSave = parsedPackages.map(pkg => {
   }
 
   /* ---------- SUCCESS RESPONSE ---------- */
+=======
+  /* ---------- CREATE ---------- */
+  const activity = await Activity.create(activityData);
+
+>>>>>>> nitin-code
   return successResponse(res, 201, "Activity created successfully", activity);
 });
 export const updateActivity = asyncHandler(async (req, res, next) => {
@@ -430,6 +533,7 @@ activity.Video = null;
   return successResponse(res, 200, "Activity updated successfully", activity);
 });
 
+
 export const toggleActivityStatusById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
@@ -459,6 +563,7 @@ export const toggleActivityStatusById = asyncHandler(async (req, res, next) => {
     activity
   );
 });
+
 
 export const getActivityById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
