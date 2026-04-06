@@ -18,6 +18,7 @@ import placeRouter from "./src/routes/place.routes.js";
 import reviewRouter from "./src/routes/review.routes.js";
 import contactRouter from "./src/routes/contact.routes.js";
 import inquiryRoutes from "./src/routes/inquiry.routes.js";
+import addonRouter from "./src/routes/addon.routes.js";
 import orderRoute from "./src/routes/order.routes.js";
 import itineraryRoute from "./src/routes/itinerary.routes.js";
 
@@ -72,7 +73,7 @@ app.use(`/health`, async (req, res) => {
 
 app.use("/api/v1/inquiry", inquiryRoutes);
 app.use("/api/v1/itinerary", itineraryRoute);
-
+app.use(`/api/v1/addons`, addonRouter);
 app.use(`/api/v1/activity`, activityRouter);
 app.use(`/api/v1/auth`, authRouter);
 app.use(`/api/v1/user`, userRouter);
