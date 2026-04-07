@@ -19,8 +19,8 @@ import {
   getPackagesByActivity,
   getPackageById,
   getTopSellingTours,
-  deleteActivity, 
-  deletePackage
+  // deleteActivity, 
+  // deletePackage
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
 import {
@@ -58,7 +58,7 @@ router.put(
   // validateRequest,
   updateActivity
 );
-router.delete("/:id", deleteActivity);
+// router.delete("/:id", deleteActivity);
 router.patch("/toggle/:id", toggleActivityStatusById);
 router.get("/get-activity/:id", getActivityById);
 router.get("/search", getAllActivity);
@@ -75,7 +75,7 @@ router.put(
   validateRequest,
   updatePackage
 );
-router.delete("/delete-package/:id", deletePackage);
+// router.delete("/delete-package/:id", deletePackage);
 router.get("/packages", getAllPackages);
 router.get("/packages/:activityId", getPackagesByActivity);
 router.get("/package/:id", getPackageById);
