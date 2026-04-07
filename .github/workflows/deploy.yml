@@ -19,7 +19,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            cd /home/ubuntu/my-app
+            cd /var/www/malik_fun_tours_backend
 
             echo "Pulling latest code..."
             git pull origin main
