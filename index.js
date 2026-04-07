@@ -40,8 +40,8 @@ app.use(
             "https://malik-frontend-jshg.vercel.app",
             "https://malik-admin-panel.vercel.app",
             "https://malik-frontend-lovat.vercel.app",
-            "https://admin.dubaiadventuretours.com/",
-            "https://dubaiadventuretours.com/"
+            "https://admin.dubaiadventuretours.com",
+            "https://dubaiadventuretours.com"
           ]
         : [
             "http://localhost:3000",
@@ -49,8 +49,8 @@ app.use(
             "https://malik-admin-panel.vercel.app",
             "https://malik-frontend-jshg.vercel.app",
             "https://malik-frontend-lovat.vercel.app",
-            "https://admin.dubaiadventuretours.com/",
-            "https://dubaiadventuretours.com/"
+            "https://admin.dubaiadventuretours.com",
+            "https://dubaiadventuretours.com"
           ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Specify allowed HTTP methods
     allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
