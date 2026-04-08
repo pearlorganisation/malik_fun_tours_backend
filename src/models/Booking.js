@@ -149,6 +149,82 @@
 // export default mongoose.model("Booking", BookingSchema);
 
 
+// import mongoose from "mongoose";
+
+// const BookingFieldSchema = new mongoose.Schema({
+//   fieldId: { type: mongoose.Schema.Types.ObjectId },
+//   value: Number,
+// });
+
+// const SelectedAddonSchema = new mongoose.Schema({
+//   addonId: { type: mongoose.Schema.Types.ObjectId, ref: "Addon" },
+//   title: String,
+//   price: Number,
+//   quantity: { type: Number, default: 1 },
+// });
+
+// const AmountBreakdownSchema = new mongoose.Schema({
+//   label: String,
+//   amount: Number,
+//   quantity: Number, // Storing quantity here fixes your label issue
+// });
+
+// const BookingSchema = new mongoose.Schema(
+//   {
+//     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    
+//     // Grouped Guest Details
+//     guestDetails: {
+//       firstName: String,
+//       lastName: String,
+//       email: String,
+//       whatsappPhone: String,
+//       pickupHotel: String,
+//     },
+
+//     // Grouped Extras/SUV
+//     extras: {
+//       isSuvSelected: { type: Boolean, default: false },
+//       suvCount: { type: Number, default: 0 },
+//       notes: String,
+//     },
+
+//     activity: { type: mongoose.Schema.Types.ObjectId, ref: "Activity", required: true },
+//     packageId: { type: mongoose.Schema.Types.ObjectId, ref: "Package", required: true },
+    
+//     bookingFields: [BookingFieldSchema],
+//     addons: [SelectedAddonSchema],
+    
+//     // Pricing
+//     currency: { type: String, default: "AED" },
+//     totalAmount: { type: Number, required: true },
+//     amountBreakdown: [AmountBreakdownSchema],
+
+//     // Payment & Status
+//     paymentMethod: { type: String, enum: ["pay_now", "pay_later"], required: true },
+//     paymentStatus: {
+//       type: String,
+//       enum: ["pending", "paid", "failed", "awaiting_payment"],
+//       default: "pending",
+//     },
+//     paymentIntentId: String,
+//     status: {
+//       type: String,
+//       enum: ["pending", "confirmed", "cancelled"],
+//       default: "pending",
+//     },
+    
+//     date: { type: Date, required: true },
+//     timeSlot: { type: String, required: true },
+//   },
+
+  
+//   { timestamps: true }
+// );
+
+// export default mongoose.model("Booking", BookingSchema);
+
+
 import mongoose from "mongoose";
 
 const BookingFieldSchema = new mongoose.Schema({
@@ -157,7 +233,8 @@ const BookingFieldSchema = new mongoose.Schema({
 });
 
 const SelectedAddonSchema = new mongoose.Schema({
-  addonId: { type: mongoose.Schema.Types.ObjectId, ref: "Addon" },
+  // addonId: { type: String }, // IDs can be strings or ObjectIds
+  addonId: { type: mongoose.Schema.Types.ObjectId, ref: "Addon" }, 
   title: String,
   price: Number,
   quantity: { type: Number, default: 1 },
@@ -166,14 +243,19 @@ const SelectedAddonSchema = new mongoose.Schema({
 const AmountBreakdownSchema = new mongoose.Schema({
   label: String,
   amount: Number,
-  quantity: Number, // Storing quantity here fixes your label issue
+  quantity: Number,
 });
 
 const BookingSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     
-    // Grouped Guest Details
+    // Snapshots (Very Important)
+    activityName: String, 
+    variantName: String,
+    whatInclude: [String],
+    whatExclude: [String],
+
     guestDetails: {
       firstName: String,
       lastName: String,
@@ -182,32 +264,30 @@ const BookingSchema = new mongoose.Schema(
       pickupHotel: String,
     },
 
-    // Grouped Extras/SUV
     extras: {
       isSuvSelected: { type: Boolean, default: false },
       suvCount: { type: Number, default: 0 },
+      suvModel: String, // Gaadi ki detail save karne ke liye
       notes: String,
     },
 
-    activity: { type: mongoose.Schema.Types.ObjectId, ref: "Activity", required: true },
+    activity: { type: mongoose.Schema.Types.ObjectId, ref: "Activity_Malik", required: true },
     packageId: { type: mongoose.Schema.Types.ObjectId, ref: "Package", required: true },
     
     bookingFields: [BookingFieldSchema],
     addons: [SelectedAddonSchema],
     
-    // Pricing
     currency: { type: String, default: "AED" },
     totalAmount: { type: Number, required: true },
     amountBreakdown: [AmountBreakdownSchema],
 
-    // Payment & Status
     paymentMethod: { type: String, enum: ["pay_now", "pay_later"], required: true },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "awaiting_payment"],
       default: "pending",
     },
-    paymentIntentId: String,
+    checkoutSessionId: String,
     status: {
       type: String,
       enum: ["pending", "confirmed", "cancelled"],
@@ -216,9 +296,8 @@ const BookingSchema = new mongoose.Schema(
     
     date: { type: Date, required: true },
     timeSlot: { type: String, required: true },
+    bookingReference: String,
   },
-
-  
   { timestamps: true }
 );
 
