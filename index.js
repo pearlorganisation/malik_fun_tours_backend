@@ -6,13 +6,14 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import { errorHandler } from "./src/middlewares/errorHandler.js";
 import { connectToMongoDB } from "./src/configs/db.js";
-
 //routes
 import authRouter from "./src/routes/auth.routes.js";
 import userRouter from "./src/routes/user.routes.js";
 import activityRouter from "./src/routes/activity.routes.js";
 import bookingRouter from "./src/routes/booking.routes.js";
 import categoryRouter from "./src/routes/category.routes.js";
+import tourRoutes from "./src/routes/tour.routes.js";
+import pageRouter from "./src/routes/page.routes.js";
 import spotRouter from "./src/routes/spot.routes.js";
 import placeRouter from "./src/routes/place.routes.js";
 import reviewRouter from "./src/routes/review.routes.js";
@@ -74,7 +75,8 @@ app.use(`/health`, async (req, res) => {
 });
 
 /** declare our routes */
-
+app.use("/api/v1/pages", pageRouter);
+app.use("/api/v1/tours", tourRoutes); 
 app.use("/api/v1/inquiry", inquiryRoutes);
 app.use("/api/v1/itinerary", itineraryRoute);
 app.use(`/api/v1/addons`, addonRouter);

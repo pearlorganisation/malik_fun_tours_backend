@@ -1,362 +1,314 @@
-import Activity from "../models/Activity.js";
+import Activity from "../models/Admin/activity.model.js";
 import Booking from "../models/Booking.js";
-import stripe from "../configs/stripe.js";
+// import stripe from "../configs/stripe.js";
 import { calculateActivityPrice } from "../utils/calculateActivityPrice.js";
+
+// export const createBooking = async (req, res) => {
+//   try {
+//     const {
+//       activityId,
+//       variantName,
+//       date,
+//       timeSlot,
+//       participants,
+//       addons = [],
+//     } = req.body;
+
+//     const activity = await Activity.findById(activityId);
+//     if (!activity)
+//       return res.status(404).json({ message: "Activity not found" });
+
+//     const variant = activity.variants.find(
+//       (v) => v.name === variantName && v.isActive
+//     );
+//     if (!variant) return res.status(400).json({ message: "Invalid variant" });
+
+//     // Calculate price
+//     const { subtotal, total } = calculateActivityPrice({
+//       variant,
+//       participants,
+//       addons,
+//     });
+
+//     // Create booking first (status: pending)
+//     const booking = await Booking.create({
+//       user: req.user?._id,
+//       activity: activityId,
+//       variantName,
+//       date,
+//       timeSlot,
+//       participants,
+//       addons,
+//       subtotal,
+//       totalAmount: total,
+//       status: "pending",
+//     });
+
+//     // ✅ Create Stripe Checkout Session (HPP)
+//     const session = await stripe.checkout.sessions.create({
+//       mode: "payment",
+//       payment_method_types: ["card"],
+//       line_items: [
+//         {
+//           price_data: {
+//             currency: "aed",
+//             product_data: {
+//               name: activity.title,
+//               description: `${variantName} | ${date} ${timeSlot}`,
+//             },
+//             unit_amount: Math.round(total * 100), // AED → fils
+//           },
+//           quantity: 1,
+//         },
+//       ],
+//       success_url: `${process.env.FRONTEND_URL}/booking/status?bookingId=${booking._id}`,
+//       cancel_url: `${process.env.FRONTEND_URL}/booking/status?bookingId=${booking._id}`,
+//       metadata: {
+//         bookingId: booking._id.toString(),
+//         activityId,
+//         variantName,
+//       },
+//       customer_email: req.user?.email,
+//     });
+
+//     // Save session ID
+//     booking.checkoutSessionId = session.id;
+//     await booking.save();
+
+//     res.status(201).json({
+//       success: true,
+//       bookingId: booking._id,
+//       checkoutUrl: session.url, // 🔥 HPP URL
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 
 export const createBooking = async (req, res) => {
   try {
     const {
       activityId,
-      variantName,
-      date,
+      activityName,      // From Payload
+      packageId,
+      variantName,       // From Payload
+      whatInclude,       // From Payload
+      whatExclude,       // From Payload
+      selectedDate,
       timeSlot,
-      participants,
-      addons = [],
+      participantsBreakdown,
+      addons,
+      transferType,
+      suvCount,
+      suvModel,          // From Payload
+      pricing,
+      customerDetails,
+      paymentMethod,
+      bookingReference
     } = req.body;
 
     const activity = await Activity.findById(activityId);
-    if (!activity)
-      return res.status(404).json({ message: "Activity not found" });
+    if (!activity) return res.status(404).json({ message: "Activity not found" });
 
-    const variant = activity.variants.find(
-      (v) => v.name === variantName && v.isActive
-    );
-    if (!variant) return res.status(400).json({ message: "Invalid variant" });
-
-    // Calculate price
-    const { subtotal, total } = calculateActivityPrice({
-      variant,
-      participants,
-      addons,
-    });
-
-    // Create booking first (status: pending)
-    const booking = await Booking.create({
+    // mapping logic
+    const bookingData = {
       user: req.user?._id,
       activity: activityId,
-      variantName,
-      date,
-      timeSlot,
-      participants,
-      addons,
-      subtotal,
-      totalAmount: total,
-      status: "pending",
-    });
-
-    // ✅ Create Stripe Checkout Session (HPP)
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "aed",
-            product_data: {
-              name: activity.title,
-              description: `${variantName} | ${date} ${timeSlot}`,
-            },
-            unit_amount: Math.round(total * 100), // AED → fils
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.FRONTEND_URL}/booking/status?bookingId=${booking._id}`,
-      cancel_url: `${process.env.FRONTEND_URL}/booking/status?bookingId=${booking._id}`,
-      metadata: {
-        bookingId: booking._id.toString(),
-        activityId,
-        variantName,
+      packageId: packageId,
+      activityName: activityName || activity.name, // Snapshot
+      variantName: variantName,                    // Snapshot
+      whatInclude: whatInclude || [],              // Snapshot
+      whatExclude: whatExclude || [],              // Snapshot
+      date: selectedDate,
+      timeSlot: timeSlot,
+      bookingReference: bookingReference,
+      
+      guestDetails: {
+        firstName: customerDetails.firstName,
+        lastName: customerDetails.lastName,
+        email: customerDetails.email,
+        whatsappPhone: customerDetails.phone,
+        // pickupHotel: customerDetails.pickupHotel,
+             pickupHotel: customerDetails.pickupHotel || "Not provided",
       },
-      customer_email: req.user?.email,
-    });
 
-    // Save session ID
-    booking.checkoutSessionId = session.id;
-    await booking.save();
+      extras: {
+        isSuvSelected: transferType === "Private SUV",
+        suvCount: suvCount || 0,
+        suvModel: suvModel || "SUV", // Model snapshot
+         notes: req.body.notes || ""
+      },
 
+      bookingFields: participantsBreakdown.map(p => ({
+        fieldId: p.fieldId,
+        value: p.quantity
+      })),
+
+      addons: addons.map(a => ({
+        addonId: a.addonId,
+        title: a.name,
+        price: a.price,
+        quantity: a.quantity
+      })),
+
+      amountBreakdown: [
+        { label: "Base Fare", amount: pricing.baseFare, quantity: 1 },
+        { label: "Addons Total", amount: pricing.addonsTotal, quantity: 1 },
+        { label: "SUV Total", amount: pricing.suvTotal, quantity: suvCount || 0 }
+      ],
+
+      totalAmount: pricing.grandTotal,
+      currency: "AED",
+     // Status & Payment Method Logic
+      paymentMethod: paymentMethod, // 'pay_now' or 'pay_later'
+      status: "pending", // Initial status hamesha pending rahega
+      paymentStatus: paymentMethod === "pay_later" ? "awaiting_payment" : "pending"
+    };
+
+    // 3. Save to Database
+    const booking = await Booking.create(bookingData);
+
+    // 4. Return Response (Stripe skip kar diya hai)
     res.status(201).json({
       success: true,
+      message: paymentMethod === "pay_later" 
+        ? "Booking created! Please pay at the counter." 
+        : "Booking initiated successfully.",
       bookingId: booking._id,
-      checkoutUrl: session.url, // 🔥 HPP URL
+      bookingReference: booking.bookingReference
     });
+    
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Booking Creation Error:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
-export const confirmPayment = async (req, res) => {
-  try {
-    const { bookingId } = req.body;
 
-    const booking = await Booking.findById(bookingId);
+export const getAllBookings = async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 10, 
+      status, 
+      search, 
+      paymentStatus 
+    } = req.query;
+
+    const skip = (page - 1) * limit;
+    let query = {};
+    if (status && status !== "all") query.status = status;
+    if (paymentStatus) query.paymentStatus = paymentStatus;
+    
+    if (search) {
+      query.$or = [
+        { bookingReference: { $regex: search, $options: "i" } },
+        { "guestDetails.email": { $regex: search, $options: "i" } },
+        { "guestDetails.firstName": { $regex: search, $options: "i" } },
+        { activityName: { $regex: search, $options: "i" } }
+      ];
+    }
+    const bookings = await Booking.find(query)
+      .populate({
+        path: "activity",
+        select: "name Images categoryId placeId" 
+      })
+      .populate({
+        path: "packageId",
+        select: "name price bookingFields"
+      })
+      .populate({
+        path: "addons.addonId",
+        select: "name price"
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Booking.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 2. GET SINGLE BOOKING BY ID (Deep Detail View)
+export const getBookingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const booking = await Booking.findById(id)
+      .populate("user", "name email") // User details
+      .populate("activity")           // Full Activity details
+      .populate("packageId")          // Full Package details
+      .populate("addons.addonId");    // Original Addon prices/names
+
     if (!booking) {
       return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
-    // 🔒 Ownership check
-    if (!req.user || booking.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: "Unauthorized access" });
-    }
+    res.status(200).json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    // 🔁 Check if already paid
-    if (booking.paymentStatus === "paid") {
-      return res.status(200).json({ success: true, message: "Already confirmed", isPaid: true });
-    }
+// 3. UPDATE BOOKING STATUS (Status / Payment Status)
+export const updateBookingStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, paymentStatus, notes } = req.body;
 
-    if (!booking.paymentIntentId) {
-      return res.status(400).json({ success: false, message: "No payment intent found" });
-    }
+    const booking = await Booking.findById(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    // Retrieve the PaymentIntent from Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(booking.paymentIntentId);
+    // Update fields if provided
+    if (status) booking.status = status;
+    if (paymentStatus) booking.paymentStatus = paymentStatus;
+    if (notes) booking.extras.notes = notes;
 
-    // 🔐 Verification
-    // 1. Check if payment succeeded in Stripe
-    if (paymentIntent.status !== "succeeded") {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Payment status is: ${paymentIntent.status}`,
-        isPaid: false 
-      });
-    }
-
-    // 2. Amount verification (Ensure the amount paid matches the booking)
-    if (paymentIntent.amount !== Math.round(booking.totalAmount * 100)) {
-      return res.status(400).json({ success: false, message: "Amount mismatch" });
-    }
-
-    // Update database
-    booking.paymentStatus = "paid";
-    booking.status = "confirmed"; // Matches your schema
     await booking.save();
 
     res.status(200).json({
       success: true,
-      message: "Booking confirmed",
-      isPaid: true,
+      message: "Booking updated successfully",
+      data: booking
     });
   } catch (error) {
-    console.error("Error in confirmPayment:", error);
-    res.status(500).json({ success: false, message: "Payment verification failed" });
-  }
-};
-// Add this to your booking controller file
-
-export const getMyBookings = async (req, res) => {
-  try {
-    // Ensure user is authenticated
-    if (!req.user?._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized. Please log in.",
-      });
-    }
-
-    // Build filter object
-    const filter = { user: req.user._id };
-
-    // Filter by status (pending, paid, cancelled)
-    if (req.query.status) {
-      const status = req.query.status.toLowerCase();
-      if (!["pending", "paid", "cancelled"].includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid status. Must be 'pending', 'paid', or 'cancelled'.",
-        });
-      }
-      filter.status = status;
-    }
-
-    // Filter by paid (shortcut for status=paid)
-    if (req.query.paid !== undefined) {
-      const paid = req.query.paid === "true" || req.query.paid === "1";
-      if (paid) {
-        filter.status = "paid";
-      }
-      // if paid=false → show all (no extra filter)
-    }
-
-    // Pagination parameters
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const skip = (page - 1) * limit;
-
-    if (page < 1 || limit < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Page and limit must be positive integers.",
-      });
-    }
-
-    // Fetch bookings with filters + pagination
-    const bookings = await Booking.find(filter)
-      .populate("activity", "title images duration location")
-      .sort({ createdAt: -1 }) // newest first
-      .skip(skip)
-      .limit(limit)
-      .exec();
-
-    // Get total count for pagination metadata
-    const totalBookings = await Booking.countDocuments(filter);
-
-    const totalPages = Math.ceil(totalBookings / limit);
-
-    res.status(200).json({
-      success: true,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalBookings,
-        limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-      bookings,
-    });
-  } catch (error) {
-    console.error("Error fetching my bookings:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch your bookings",
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-export const getAllBookings = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const skip = (page - 1) * limit;
-
-    if (page < 1 || limit < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Page and limit must be positive integers.",
-      });
-    }
-
-    const status = req.query.status;
-    const search = req.query.search?.trim();
-
-    /** ---------------- BASE MATCH ---------------- */
-    const matchStage = {};
-    if (status && status !== "all") {
-      matchStage.status = status;
-    }
-
-    /** ---------------- PIPELINE ---------------- */
-    const pipeline = [
-      { $match: matchStage },
-
-      // 🔗 activity join
-      {
-        $lookup: {
-          from: "activities",
-          localField: "activity",
-          foreignField: "_id",
-          as: "activity",
-        },
-      },
-      { $unwind: "$activity" },
-
-      // 🔗 user join
-      {
-        $lookup: {
-          from: "users",
-          let: { userId: "$user" },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ["$_id", "$$userId"] },
-              },
-            },
-            {
-              $project: {
-                password: 0,
-                refresh_token: 0,
-                __v: 0,
-              },
-            },
-          ],
-          as: "user",
-        },
-      },
-      { $unwind: "$user" },
-    ];
-
-    /** ---------------- SEARCH ---------------- */
-    if (search) {
-      pipeline.push({
-        $match: {
-          $or: [
-            { "activity.title": { $regex: search, $options: "i" } },
-            { "user.name": { $regex: search, $options: "i" } },
-            { "user.email": { $regex: search, $options: "i" } },
-          ],
-        },
-      });
-    }
-
-    /** ---------------- SORT + PAGINATION ---------------- */
-    pipeline.push(
-      { $sort: { createdAt: -1 } },
-      {
-        $facet: {
-          data: [{ $skip: skip }, { $limit: limit }],
-          totalCount: [{ $count: "count" }],
-        },
-      }
-    );
-
-    const result = await Booking.aggregate(pipeline);
-
-    const bookings = result[0].data;
-    const totalBookings = result[0].totalCount[0]?.count || 0;
-    const totalPages = Math.ceil(totalBookings / limit);
-
-    res.status(200).json({
-      success: true,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalBookings,
-        limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-      bookings,
-    });
-  } catch (error) {
-    console.error("Error fetching all bookings:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch all bookings",
-    });
-  }
-};
-
-export const getBookingById = async (req, res) => {
+// 4. DELETE BOOKING
+export const deleteBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const booking = await Booking.findById(id)
-      .populate("activity", "title images duration location")
-      .populate("user", "name email");
+    const booking = await Booking.findByIdAndDelete(id);
+
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
+      return res.status(404).json({ success: false, message: "Booking already deleted or not found" });
     }
+
     res.status(200).json({
       success: true,
-      booking,
+      message: "Booking deleted from system successfully"
     });
   } catch (error) {
-    console.error("Error fetching booking by ID:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch booking",
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+
