@@ -3,9 +3,9 @@ import Contact from "../models/Contact.js";
 
 export const createQuery = async (req , res) => {
     try{
-        const {name , email , phone , message} = req.body;
+        const {name , email , phone } = req.body;
 
-        if(!name || !email || !phone || !message){
+        if(!name || !email || !phone ){
             return res.status(400).json({
                 success:false,
                 message:"All fields are required"
@@ -15,8 +15,7 @@ export const createQuery = async (req , res) => {
         const contact = await Contact.create({
             name,
             email,
-            phone,
-            message
+            phone
         });
 
         return res.status(201).json({

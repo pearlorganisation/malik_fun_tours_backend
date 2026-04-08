@@ -16,11 +16,6 @@ const contactSchema = new moongoose.Schema({
         required:true,
         trim:true
     },
-    message:{
-        type:String,
-        required:true,
-        trim:true
-    },
     status:{
         type:String,
         enum:['NEW','PENDING','RESOLVED'],

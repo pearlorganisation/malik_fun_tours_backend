@@ -11,10 +11,14 @@ import { authenticateToken } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", createReview);
+// router.post("/", createReview);
+// router.put("/:id",authenticateToken, updateReview);
+// router.delete("/:id",authenticateToken, deleteReview);
+router.post("/", authenticateToken, createReview); 
+router.put("/:id", authenticateToken, updateReview);
+router.delete("/:id", authenticateToken, deleteReview);
+
 router.get("/activity/:activityId", getActivityReviews);
-router.put("/:id",authenticateToken, updateReview);
-router.delete("/:id",authenticateToken, deleteReview);
 // All reviews (pagination)
 router.get("/all", getAllReviews);
 // Only stats

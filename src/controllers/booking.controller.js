@@ -312,3 +312,44 @@ export const deleteBooking = async (req, res) => {
 
 
 
+
+export const getMyBookings = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status } = req.query;
+    const skip = (page - 1) * limit;
+
+    // Filter by logged-in user ID
+    let query = { user: req.user._id };
+
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    const bookings = await Booking.find(query)
+      .populate({
+        path: "activity",
+        select: "name Images placeId"
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Booking.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      bookings, // Frontend yahi expect kar raha hai
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
