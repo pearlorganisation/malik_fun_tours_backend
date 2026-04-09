@@ -16,17 +16,10 @@ const contactSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-<<<<<<< HEAD
     status: {
         type: String,
         enum: ['NEW', 'PENDING', 'RESOLVED'],
         default: 'NEW'
-=======
-    status:{
-        type:String,
-        enum:['NEW','PENDING','RESOLVED'],
-        default:'NEW'
->>>>>>> e997436d9b09fd20b84d536f72c40e8b545e78c0
     }
 }, { timestamps: true });
 

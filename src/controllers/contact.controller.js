@@ -1,19 +1,11 @@
 import Contact from "../models/Contact.js";
 
 
-<<<<<<< HEAD
 export const createQuery = async (req, res) => {
     try {
         const { name, email, phone } = req.body;
 
         if (!name || !email || !phone) {
-=======
-export const createQuery = async (req , res) => {
-    try{
-        const {name , email , phone } = req.body;
-
-        if(!name || !email || !phone ){
->>>>>>> e997436d9b09fd20b84d536f72c40e8b545e78c0
             return res.status(400).json({
                 success: false,
                 message: "All fields are required"
