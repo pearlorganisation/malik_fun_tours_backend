@@ -187,6 +187,7 @@ export const createBooking = async (req, res) => {
 };
 
 
+
 export const getAllBookings = async (req, res) => {
   try {
     const { 
