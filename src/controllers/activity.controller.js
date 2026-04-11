@@ -127,6 +127,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
       categoryId,
       placeId,
      sourceActivityId:activityId || sourceActivityId || null,
+     addons: req.body.addons ? JSON.parse(req.body.addons) : [],
       Experience: Experience ? JSON.parse(Experience) : {},
       Itinerary: Itinerary ? JSON.parse(Itinerary) : [],
       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
@@ -292,6 +293,7 @@ const parseField = (field) => {
 
 const experience = parseField("Experience");
 const itinerary = parseField("Itinerary");
+const addons = parseField("addons");
 const logistics = parseField("InfoAndLogistics");
 const bbq = parseField("BBQ_BUFFET");
 const suv = parseField("PrivateSUV");
@@ -299,6 +301,7 @@ const timeSlots = parseField("timeSlots");
 
 if (experience !== undefined) activity.Experience = experience;
 if (itinerary !== undefined) activity.Itinerary = itinerary;
+if (addons !== undefined) activity.addons = addons;
 if (logistics !== undefined) activity.InfoAndLogistics = logistics;
 if (bbq !== undefined) activity.BBQ_BUFFET = bbq;
 if (suv !== undefined) activity.PrivateSUV = suv;
@@ -429,11 +432,17 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
 
 
   /* ---------- FIND ACTIVITY + VIRTUAL PACKAGES ---------- */
-  const activity = await Activity.findById(id).populate({
-    path: "packages",
-    options: { sort: { price: 1 } },
-  });
+  // const activity = await Activity.findById(id).populate({
+  //   path: "packages",
+  //   options: { sort: { price: 1 } },
+  // });
 
+   const activity = await Activity.findById(id)
+    .populate("addons") 
+    .populate({
+      path: "packages",
+      options: { sort: { price: 1 } },
+    });
   if (!activity) {
     return res.status(404).json({
       success: false,
@@ -612,6 +621,7 @@ export const getAllActivity = asyncHandler(async (req, res, next) => {
     Activity.find(filter)
       .populate("placeId", "name region")
       .populate("categoryId", "name image description")
+       .populate("addons")
       .populate({
         path: "packages",
         options: { sort: { price: 1 } },
@@ -960,6 +970,14 @@ export const getTopSellingTours = asyncHandler(async (req, res, next) => {
     { $match: { isActive: true } },
 
     /* ---------- CALCULATE RATINGS ---------- */
+     {
+      $lookup: {
+        from: "addons", // Mongoose 'Addon' model ki collection ka naam 'addons' hota hai
+        localField: "addons",
+        foreignField: "_id",
+        as: "addons",
+      },
+    },
     {
       $lookup: {
         from: "reviews", // Check your DB, might be "review_maliks" if using your custom naming
@@ -1024,6 +1042,7 @@ export const getTopSellingTours = asyncHandler(async (req, res, next) => {
         _id: 1,
         name: 1,
         slug: 1,
+        addons: 1,
         // Get first image from array
         image: { $arrayElemAt: ["$Images.secure_url", 0] }, 
         rating: { $round: ["$averageRating", 1] },

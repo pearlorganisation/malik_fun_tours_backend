@@ -162,7 +162,12 @@ const ActivitySchema = new mongoose.Schema(
       
     },
     },
-    
+      addons: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Addon", 
+      },
+    ],
     /* ---------- STATUS ---------- */
     isActive: {
       type: Boolean,
