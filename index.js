@@ -22,7 +22,7 @@ import inquiryRoutes from "./src/routes/inquiry.routes.js";
 import addonRouter from "./src/routes/addon.routes.js";
 import orderRoute from "./src/routes/order.routes.js";
 import itineraryRoute from "./src/routes/itinerary.routes.js";
-
+import hotelRoutes from "./src/routes/hotel.route.js";
 configDotenv();
 
 const stripe_parser = bodyParser.raw({ type: "application/json" });
@@ -90,7 +90,7 @@ app.use(`/api/v1/places`, placeRouter);
 app.use(`/api/v1/reviews`, reviewRouter);
 app.use(`/api/v1/contact`, contactRouter);
 app.use(`/api/v1/order` , orderRoute)
-
+app.use(`/api/v1/hotel`,hotelRoutes)
 app.use(errorHandler);
 
 app.listen(process.env.PORT, async () => {
