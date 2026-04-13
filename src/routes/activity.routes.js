@@ -19,8 +19,7 @@ import {
   getPackagesByActivity,
   getPackageById,
   getTopSellingTours,
-  // deleteActivity, 
-  // deletePackage
+  deleteActivity 
 } from "../controllers/activity.controller.js";
 import { upload } from "../middlewares/multer.js";
 import {
