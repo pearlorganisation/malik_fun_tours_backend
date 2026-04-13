@@ -127,6 +127,7 @@ export const createActivity = asyncHandler(async (req, res, next) => {
       categoryId,
       placeId,
      sourceActivityId:activityId || sourceActivityId || null,
+     addons: req.body.addons ? JSON.parse(req.body.addons) : [],
       Experience: Experience ? JSON.parse(Experience) : {},
       Itinerary: Itinerary ? JSON.parse(Itinerary) : [],
       InfoAndLogistics: InfoAndLogistics ? JSON.parse(InfoAndLogistics) : {},
@@ -292,6 +293,7 @@ const parseField = (field) => {
 
 const experience = parseField("Experience");
 const itinerary = parseField("Itinerary");
+const addons = parseField("addons");
 const logistics = parseField("InfoAndLogistics");
 const bbq = parseField("BBQ_BUFFET");
 const suv = parseField("PrivateSUV");
@@ -299,6 +301,7 @@ const timeSlots = parseField("timeSlots");
 
 if (experience !== undefined) activity.Experience = experience;
 if (itinerary !== undefined) activity.Itinerary = itinerary;
+if (addons !== undefined) activity.addons = addons;
 if (logistics !== undefined) activity.InfoAndLogistics = logistics;
 if (bbq !== undefined) activity.BBQ_BUFFET = bbq;
 if (suv !== undefined) activity.PrivateSUV = suv;
@@ -429,11 +432,17 @@ export const getActivityById = asyncHandler(async (req, res, next) => {
 
 
   /* ---------- FIND ACTIVITY + VIRTUAL PACKAGES ---------- */
-  const activity = await Activity.findById(id).populate({
-    path: "packages",
-    options: { sort: { price: 1 } },
-  });
+  // const activity = await Activity.findById(id).populate({
+  //   path: "packages",
+  //   options: { sort: { price: 1 } },
+  // });
 
+   const activity = await Activity.findById(id)
+    .populate("addons") 
+    .populate({
+      path: "packages",
+      options: { sort: { price: 1 } },
+    });
   if (!activity) {
     return res.status(404).json({
       success: false,
@@ -570,6 +579,72 @@ export const createPackage = asyncHandler(async (req, res, next) => {
 
 });
 
+export const getAllActivity = asyncHandler(async (req, res, next) => {
+  let { 
+    page = 1, 
+    limit = 10, 
+    categoryId, 
+    place, 
+    search,
+    slug 
+  } = req.query;
+
+  page = Number(page);
+  limit = Number(limit);
+  const skip = (page - 1) * limit;
+
+  const filter = {
+    isActive: true,
+  };
+
+  /* ================= SLUG ================= */
+  if (slug) {
+    filter.slug = slug;
+  }
+
+  /* SEARCH */
+  if (search) {
+    filter.name = { $regex: search, $options: "i" };
+  }
+
+  /* CATEGORY */
+  if (categoryId) {
+    filter.categoryId = categoryId;
+  }
+
+  /* LOCATION */
+  if (place) {
+    filter.placeId = place;
+  }
+
+  const [activities, total] = await Promise.all([
+    Activity.find(filter)
+      .populate("placeId", "name region")
+      .populate("categoryId", "name image description")
+       .populate("addons")
+      .populate({
+        path: "packages",
+        options: { sort: { price: 1 } },
+      })
+      .select("-reviews")
+      .sort({ createdAt: -1 }) // 🔥 Latest items pehle dikhane ke liye
+      .skip(skip)              // 🔥 Pagination ke liye (e.g. skip first 10)
+      .limit(limit)            // 🔥 Sirf 10 items lane ke liye
+      .lean(),
+
+    Activity.countDocuments(filter),
+  ]);
+
+  return successResponse(res, 200, "Activities fetched successfully", {
+    data: activities,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+});
 // export const getAllActivity = asyncHandler(async (req, res, next) => {
 //   let { page = 1, limit = 10, category, place, search } = req.query;
 
@@ -736,68 +811,68 @@ export const createPackage = asyncHandler(async (req, res, next) => {
 // });
 
 
-export const getAllActivity = asyncHandler(async (req, res, next) => {
-  let { 
-    page = 1, 
-    limit = 10, 
-    categoryId, 
-    place, 
-    search,
-    slug // ✅ NEW
-  } = req.query;
+// export const getAllActivity = asyncHandler(async (req, res, next) => {
+//   let { 
+//     page = 1, 
+//     limit = 10, 
+//     categoryId, 
+//     place, 
+//     search,
+//     slug // ✅ NEW
+//   } = req.query;
 
-  page = Number(page);
-  limit = Number(limit);
-  const skip = (page - 1) * limit;
+//   page = Number(page);
+//   limit = Number(limit);
+//   const skip = (page - 1) * limit;
 
-  const filter = {
-    isActive: true,
-  };
+//   const filter = {
+//     isActive: true,
+//   };
 
-  /* ================= SLUG (🔥 MAIN LOGIC) ================= */
-  if (slug) {
-    filter.slug = slug;
-  }
+//   /* ================= SLUG (🔥 MAIN LOGIC) ================= */
+//   if (slug) {
+//     filter.slug = slug;
+//   }
 
-  /* SEARCH */
-  if (search) {
-    filter.name = { $regex: search, $options: "i" };
-  }
+//   /* SEARCH */
+//   if (search) {
+//     filter.name = { $regex: search, $options: "i" };
+//   }
 
-  /* CATEGORY */
-  if (categoryId) {
-    filter.categoryId = categoryId;
-  }
+//   /* CATEGORY */
+//   if (categoryId) {
+//     filter.categoryId = categoryId;
+//   }
 
-  /* LOCATION */
-  if (place) {
-    filter.placeId = place;
-  }
+//   /* LOCATION */
+//   if (place) {
+//     filter.placeId = place;
+//   }
 
-  const [activities, total] = await Promise.all([
-    Activity.find(filter)
-      .populate("placeId", "name region")
-      .populate("categoryId", "name image description")
-      .populate({
-        path: "packages",
-        options: { sort: { price: 1 } }, // ✅ same detail jese getById
-      })
-      .select("-reviews")
-      .lean(),
+//   const [activities, total] = await Promise.all([
+//     Activity.find(filter)
+//       .populate("placeId", "name region")
+//       .populate("categoryId", "name image description")
+//       .populate({
+//         path: "packages",
+//         options: { sort: { price: 1 } }, // ✅ same detail jese getById
+//       })
+//       .select("-reviews")
+//       .lean(),
 
-    Activity.countDocuments(filter),
-  ]);
+//     Activity.countDocuments(filter),
+//   ]);
 
-  return successResponse(res, 200, "Activities fetched successfully", {
-    data: activities,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
-});
+//   return successResponse(res, 200, "Activities fetched successfully", {
+//     data: activities,
+//     pagination: {
+//       total,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit),
+//     },
+//   });
+// });
 export const updatePackage = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
@@ -895,6 +970,14 @@ export const getTopSellingTours = asyncHandler(async (req, res, next) => {
     { $match: { isActive: true } },
 
     /* ---------- CALCULATE RATINGS ---------- */
+     {
+      $lookup: {
+        from: "addons", // Mongoose 'Addon' model ki collection ka naam 'addons' hota hai
+        localField: "addons",
+        foreignField: "_id",
+        as: "addons",
+      },
+    },
     {
       $lookup: {
         from: "reviews", // Check your DB, might be "review_maliks" if using your custom naming
@@ -959,6 +1042,7 @@ export const getTopSellingTours = asyncHandler(async (req, res, next) => {
         _id: 1,
         name: 1,
         slug: 1,
+        addons: 1,
         // Get first image from array
         image: { $arrayElemAt: ["$Images.secure_url", 0] }, 
         rating: { $round: ["$averageRating", 1] },
@@ -971,4 +1055,37 @@ export const getTopSellingTours = asyncHandler(async (req, res, next) => {
   ]);
 
   return successResponse(res, 200, "Top selling tours fetched", activities);
+});
+
+// activity.controller.js mein add karein
+
+export const deleteActivity = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  /* ---------- 1. FIND ACTIVITY ---------- */
+  const activity = await Activity.findById(id);
+
+  if (!activity) {
+    return next(new ApiError("Activity not found", 404));
+  }
+
+  /* ---------- 2. DELETE IMAGES & VIDEO FROM CLOUDINARY ---------- */
+  // Delete all images from Cloudinary
+  if (activity.Images && activity.Images.length > 0) {
+    const publicIds = activity.Images.map((img) => img.public_id);
+    await deleteFileFromCloudinary(publicIds);
+  }
+
+  // Delete video from Cloudinary
+  if (activity.Video && activity.Video.public_id) {
+    await deleteFileFromCloudinary(activity.Video.public_id);
+  }
+
+  /* ---------- 3. DELETE ASSOCIATED PACKAGES ---------- */
+  await Package.deleteMany({ activityId: id });
+
+  /* ---------- 4. DELETE ACTIVITY FROM DB ---------- */
+  await activity.deleteOne();
+
+  return successResponse(res, 200, "Activity and its packages deleted successfully");
 });

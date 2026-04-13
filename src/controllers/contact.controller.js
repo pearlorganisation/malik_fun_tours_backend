@@ -16,6 +16,7 @@ export const createQuery = async (req, res) => {
             name,
             email,
             phone
+            phone
         });
 
         return res.status(201).json({

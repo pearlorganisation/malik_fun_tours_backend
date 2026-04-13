@@ -1,42 +1,35 @@
 import mongoose from "mongoose";
 import Review from "../models/Review.js";
 import Activity from "../models/Activity.js";
+
+
 export const createReview = async (req, res) => {
   try {
     const { activityId, rating, comment } = req.body;
-
-    await Review.create({
+    // const userId = req.user.id; 
+    const userId = req.user._id;
+     if (!userId) {
+       return res.status(401).json({ message: "Login required" });
+    }
+    const review = await Review.create({
       activity: activityId,
-      user: req.user?._id || null,
+      user: userId,
       rating,
-      comment,
+      comment
     });
 
-    const stats = await Review.aggregate([
-      { $match: { activity: new mongoose.Types.ObjectId(activityId) } },
-      {
-        $group: {
-          _id: "$activity",
-          avgRating: { $avg: "$rating" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    await Activity.findByIdAndUpdate(activityId, {
-      rating: Number(stats[0].avgRating.toFixed(1)),
-      reviewCount: stats[0].count,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Review added successfully",
-    });
+    res.status(201).json({ success: true, data: review });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    // Check if it's a duplicate key error (E11000)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already reviewed this activity."
+      });
+    }
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 export const getActivityReviews = async (req, res) => {
   try {
