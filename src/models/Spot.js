@@ -74,7 +74,8 @@ const spotSchema = new mongoose.Schema(
     whereToStay: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Place",
+        // ref: "Place",
+         ref: "Hotel",
       },
     ],
   },

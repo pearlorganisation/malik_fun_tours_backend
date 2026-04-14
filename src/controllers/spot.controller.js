@@ -105,11 +105,29 @@ export const getAllSpots = async (req, res) => {
 
 
 /* ================= GET SINGLE SPOT ================= */
+// export const getSpotById = async (req, res) => {
+//   try {
+//     const spot = await Spot.findById(req.params.id)
+//     .populate("category", "name")
+//     .populate("whereToStay")
+
+//     if (!spot) {
+//       return res.status(404).json({ message: "Spot not found" });
+//     }
+
+//     res.json({ success: true, data: spot });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+/* ================= GET SINGLE SPOT ================= */
 export const getSpotById = async (req, res) => {
   try {
     const spot = await Spot.findById(req.params.id)
-    .populate("category", "name")
-    .populate("whereToStay")
+      .populate("category", "name")
+      .populate("whereToStay"); // Yeh Hotels fetch karega ab
 
     if (!spot) {
       return res.status(404).json({ message: "Spot not found" });
@@ -120,7 +138,6 @@ export const getSpotById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 /* ================= UPDATE SPOT ================= */
 export const updateSpot = async (req, res) => {
   try {
