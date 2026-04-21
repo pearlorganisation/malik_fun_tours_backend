@@ -99,7 +99,6 @@ import addonsModel from "../models/Admin/addons.model.js";
 // });
 
 
-
 export const createActivity = asyncHandler(async (req, res, next) => {
   const {
     name,

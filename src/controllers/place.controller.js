@@ -4,6 +4,8 @@ import {
   deleteFileFromCloudinary,
 } from "../configs/cloudinary.js";
 import slugify from "slugify";
+import Hotel from "../models/hotel.model.js"; 
+import Spot from "../models/Spot.js";  
 
 // HELPER: Ensures latitude and longitude are actual numbers for MongoDB
 const parseCoordinates = (obj) => {

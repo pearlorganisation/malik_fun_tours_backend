@@ -115,7 +115,7 @@ const placeSchema = new mongoose.Schema(
     whereToStay: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Spot", // or "Place" if hotels are places
+        ref: "Hotel", // or "Place" if hotels are places
       },
     ],
   },
